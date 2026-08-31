@@ -1,0 +1,87 @@
+"use client";
+
+import { useUsuariosLista } from "./useUsuariosLista";
+
+// Reutilizamos la misma idea de "etiqueta legible" que en el perfil
+const ETIQUETAS_ROL: Record<string, string> = {
+  administrador: "Administrador",
+  residente: "Residente",
+  portero: "Portero",
+};
+
+export default function UsuariosPage() {
+  const { busqueda, setBusqueda, usuariosFiltrados } = useUsuariosLista();
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="font-display text-3xl font-semibold text-ink">
+            Usuarios
+          </h1>
+          <p className="mt-1 text-ink/60">
+            {usuariosFiltrados.length} usuario(s) encontrado(s)
+          </p>
+        </div>
+      </div>
+
+      {/* Buscador: RF-14 */}
+      <input
+        type="text"
+        placeholder="Buscar por nombre o correo..."
+        value={busqueda}
+        onChange={(evento) => setBusqueda(evento.target.value)}
+        className="mt-6 w-full max-w-sm rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink placeholder:text-ink/30 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+      />
+
+      <div className="mt-6 overflow-hidden rounded-xl border border-line bg-white">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b border-line bg-canvas">
+            <tr>
+              <th className="px-4 py-3 font-medium text-ink/60">Nombre</th>
+              <th className="px-4 py-3 font-medium text-ink/60">Correo</th>
+              <th className="px-4 py-3 font-medium text-ink/60">Rol</th>
+              <th className="px-4 py-3 font-medium text-ink/60">Estado</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* RF-14, segundo criterio de HU-41: si no hay coincidencias,
+                mostrar un mensaje en vez de una tabla vacia confusa */}
+            {usuariosFiltrados.length === 0 ? (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-ink/40">
+                  No se encontraron usuarios con ese criterio de búsqueda.
+                </td>
+              </tr>
+            ) : (
+              usuariosFiltrados.map((usuario) => (
+                <tr key={usuario.id} className="border-b border-line last:border-0">
+                  <td className="px-4 py-3 text-ink">
+                    {usuario.nombres} {usuario.apellidos}
+                  </td>
+                  <td className="px-4 py-3 text-ink/70">{usuario.correo}</td>
+                  <td className="px-4 py-3">
+                    <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-medium text-brand">
+                      {ETIQUETAS_ROL[usuario.rol]}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={
+                        usuario.estado === "activo"
+                          ? "rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700"
+                          : "rounded-full bg-zinc-100 px-2.5 py-0.5 text-xs font-medium text-zinc-500"
+                      }
+                    >
+                      {usuario.estado === "activo" ? "Activo" : "Inactivo"}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

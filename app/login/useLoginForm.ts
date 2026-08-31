@@ -2,33 +2,44 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth, type UsuarioSesion } from "@/context/AuthContext";
 
 interface ErroresLogin {
   [campo: string]: string;
 }
 
 // --- SIMULACION DE BACKEND ---
-// "Base de datos" falsa de usuarios validos, mientras Juan Manuel
-// construye el backend real con FastAPI. La estructura de esta
-// funcion (async, devuelve una Promise) es la misma que tendra la
-// llamada real a la API - solo cambiara lo que hay DENTRO de la funcion.
-const usuariosValidos = [
-  { correo: "omar@urbanix.com", contrasena: "12345678" },
-  { correo: "juan@urbanix.com", contrasena: "12345678" },
+// Ahora cada usuario simulado incluye su rol, igual que lo tendria
+// el JWT real que devolveria FastAPI al iniciar sesion.
+const usuariosValidos: (UsuarioSesion & { contrasena: string })[] = [
+  {
+    correo: "omar@urbanix.com",
+    contrasena: "12345678",
+    nombres: "Omar",
+    apellidos: "Guillén",
+    rol: "administrador",
+  },
+  {
+    correo: "juan@urbanix.com",
+    contrasena: "12345678",
+    nombres: "Juan Manuel",
+    apellidos: "Ciro",
+    rol: "residente",
+  },
 ];
 
 function verificarCredenciales(
   correo: string,
   contrasena: string
-): Promise<boolean> {
+): Promise<UsuarioSesion | null> {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const coincide = usuariosValidos.some(
-        (usuario) =>
-          usuario.correo === correo.toLowerCase().trim() &&
-          usuario.contrasena === contrasena
+      const encontrado = usuariosValidos.find(
+        (u) =>
+          u.correo === correo.toLowerCase().trim() &&
+          u.contrasena === contrasena
       );
-      resolve(coincide);
+      resolve(encontrado ?? null);
     }, 500);
   });
 }
@@ -36,6 +47,7 @@ function verificarCredenciales(
 
 export function useLoginForm() {
   const router = useRouter();
+  const { iniciarSesion } = useAuth();
 
   const [correo, setCorreo] = useState("");
   const [contrasena, setContrasena] = useState("");
@@ -45,14 +57,9 @@ export function useLoginForm() {
   async function handleSubmit(evento: React.FormEvent) {
     evento.preventDefault();
 
-    // Validacion basica: campos no vacios (RF-04, RF-05)
     const nuevosErrores: ErroresLogin = {};
-    if (correo.trim() === "") {
-      nuevosErrores.correo = "El correo es obligatorio";
-    }
-    if (contrasena.trim() === "") {
-      nuevosErrores.contrasena = "La contraseña es obligatoria";
-    }
+    if (correo.trim() === "") nuevosErrores.correo = "El correo es obligatorio";
+    if (contrasena.trim() === "") nuevosErrores.contrasena = "La contraseña es obligatoria";
 
     if (Object.keys(nuevosErrores).length > 0) {
       setErrores(nuevosErrores);
@@ -60,30 +67,25 @@ export function useLoginForm() {
     }
 
     setEnviando(true);
-    const sonValidas = await verificarCredenciales(correo, contrasena);
+    const usuarioEncontrado = await verificarCredenciales(correo, contrasena);
     setEnviando(false);
 
-    if (!sonValidas) {
-      // Nota importante de seguridad: el mensaje NO dice cual de los
-      // dos campos esta mal (¿correo o contraseña?). Si fueras mas
-      // especifico, le darias pistas a alguien intentando adivinar
-      // credenciales ajenas sobre cual dato acerto.
+    if (!usuarioEncontrado) {
       setErrores({ general: "Correo o contraseña incorrectos" });
       return;
     }
 
-    // Credenciales correctas: limpiamos errores y navegamos.
     setErrores({});
+    // Guardamos la sesion en el contexto global (y en localStorage,
+    // por dentro del Provider) ANTES de navegar al panel.
+    iniciarSesion({
+      nombres: usuarioEncontrado.nombres,
+      apellidos: usuarioEncontrado.apellidos,
+      correo: usuarioEncontrado.correo,
+      rol: usuarioEncontrado.rol,
+    });
     router.push("/panel");
   }
 
-  return {
-    correo,
-    setCorreo,
-    contrasena,
-    setContrasena,
-    errores,
-    enviando,
-    handleSubmit,
-  };
+  return { correo, setCorreo, contrasena, setContrasena, errores, enviando, handleSubmit };
 }

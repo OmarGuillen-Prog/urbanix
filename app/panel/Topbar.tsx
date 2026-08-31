@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 
@@ -11,21 +12,21 @@ export function Topbar() {
   const nombreCompleto = usuario ? `${usuario.nombres} ${usuario.apellidos}` : "";
 
   function handleCerrarSesion() {
-    // cerrarSesion() ya se encarga de: limpiar el estado del contexto
-    // (usuario -> null) y borrar la clave de localStorage. Aqui solo
-    // nos toca decidir A DONDE mandar al usuario despues de eso.
     cerrarSesion();
     router.push("/login");
   }
 
   return (
     <header className="flex h-16 items-center justify-end gap-4 border-b border-line bg-white px-8">
-      <div className="flex items-center gap-3">
+      <Link
+        href="/panel/perfil"
+        className="flex items-center gap-3 rounded-lg px-2 py-1 transition-colors hover:bg-canvas"
+      >
         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-sm font-medium text-white">
           {inicial}
         </div>
         <span className="text-sm font-medium text-ink">{nombreCompleto}</span>
-      </div>
+      </Link>
 
       <button
         onClick={handleCerrarSesion}

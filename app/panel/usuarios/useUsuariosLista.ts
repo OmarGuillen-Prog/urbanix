@@ -1,33 +1,41 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { usuariosSimulados, type Usuario } from "@/lib/usuariosStore";
+import { obtenerUsuarios, eliminarUsuario, type Usuario } from "@/lib/usuariosStore";
 
 export function useUsuariosLista() {
   const [busqueda, setBusqueda] = useState("");
+  // Copiamos los datos del store a estado local con useState, para
+  // que React "sepa" que debe re-dibujar la tabla cuando cambien.
+  const [usuarios, setUsuarios] = useState<Usuario[]>(() => obtenerUsuarios());
 
-  // useMemo: le dice a React "solo vuelve a calcular esto si cambia
-  // 'busqueda'". Sin esto, el filtrado se recalcularia en CADA
-  // re-render del componente (por ejemplo, si algo mas en la pantalla
-  // cambia), aunque el texto de busqueda siga igual - trabajo
-  // desperdiciado. Con listas pequeñas como esta no se nota, pero es
-  // el habito correcto para cuando el listado tenga cientos de filas.
   const usuariosFiltrados = useMemo(() => {
     const termino = busqueda.trim().toLowerCase();
-
-    // Si no hay busqueda, mostramos todos (RF-13: listar usuarios)
-    if (termino === "") return usuariosSimulados;
-
-    // Si hay busqueda, filtramos por nombre, apellido o correo
-    // (RF-14: buscar mediante filtros o criterios de busqueda)
-    return usuariosSimulados.filter((usuario: Usuario) => {
+    if (termino === "") return usuarios;
+    return usuarios.filter((usuario) => {
       const nombreCompleto = `${usuario.nombres} ${usuario.apellidos}`.toLowerCase();
       return (
         nombreCompleto.includes(termino) ||
         usuario.correo.toLowerCase().includes(termino)
       );
     });
-  }, [busqueda]);
+  }, [usuarios, busqueda]);
 
-  return { busqueda, setBusqueda, usuariosFiltrados };
+  function handleEliminar(id: string, nombreCompleto: string) {
+    // HU-06, criterio: "Dado que el administrador confirma eliminacion"
+    // window.confirm() es el dialogo nativo mas simple del navegador
+    // para pedir una confirmacion - suficiente para esta simulacion.
+    const confirmado = window.confirm(
+      `¿Seguro que quieres eliminar a ${nombreCompleto}? Esta acción no se puede deshacer.`
+    );
+
+    if (!confirmado) return;
+
+    eliminarUsuario(id);
+    // Volvemos a leer del store y actualizamos el estado local, para
+    // que la tabla se re-dibuje sin ese usuario.
+    setUsuarios(obtenerUsuarios());
+  }
+
+  return { busqueda, setBusqueda, usuariosFiltrados, handleEliminar };
 }

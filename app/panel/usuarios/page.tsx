@@ -1,8 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useUsuariosLista } from "./useUsuariosLista";
 
-// Reutilizamos la misma idea de "etiqueta legible" que en el perfil
 const ETIQUETAS_ROL: Record<string, string> = {
   administrador: "Administrador",
   residente: "Residente",
@@ -10,7 +10,7 @@ const ETIQUETAS_ROL: Record<string, string> = {
 };
 
 export default function UsuariosPage() {
-  const { busqueda, setBusqueda, usuariosFiltrados } = useUsuariosLista();
+  const { busqueda, setBusqueda, usuariosFiltrados, handleEliminar } = useUsuariosLista();
 
   return (
     <div>
@@ -25,7 +25,6 @@ export default function UsuariosPage() {
         </div>
       </div>
 
-      {/* Buscador: RF-14 */}
       <input
         type="text"
         placeholder="Buscar por nombre o correo..."
@@ -42,14 +41,13 @@ export default function UsuariosPage() {
               <th className="px-4 py-3 font-medium text-ink/60">Correo</th>
               <th className="px-4 py-3 font-medium text-ink/60">Rol</th>
               <th className="px-4 py-3 font-medium text-ink/60">Estado</th>
+              <th className="px-4 py-3 font-medium text-ink/60">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {/* RF-14, segundo criterio de HU-41: si no hay coincidencias,
-                mostrar un mensaje en vez de una tabla vacia confusa */}
             {usuariosFiltrados.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-ink/40">
+                <td colSpan={5} className="px-4 py-8 text-center text-ink/40">
                   No se encontraron usuarios con ese criterio de búsqueda.
                 </td>
               </tr>
@@ -75,6 +73,24 @@ export default function UsuariosPage() {
                     >
                       {usuario.estado === "activo" ? "Activo" : "Inactivo"}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/panel/usuarios/${usuario.id}`}
+                        className="text-sm font-medium text-brand hover:text-brand-dark"
+                      >
+                        Editar
+                      </Link>
+                      <button
+                        onClick={() =>
+                          handleEliminar(usuario.id, `${usuario.nombres} ${usuario.apellidos}`)
+                        }
+                        className="text-sm font-medium text-error hover:text-error/70"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

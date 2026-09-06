@@ -26,6 +26,13 @@ const usuariosValidos: (UsuarioSesion & { contrasena: string })[] = [
     apellidos: "Ciro",
     rol: "residente",
   },
+  {
+    correo: "andres@urbanix.com",
+    contrasena: "12345678",
+    nombres: "Andrés",
+    apellidos: "Vélez",
+    rol: "portero",
+  },
 ];
 
 function verificarCredenciales(

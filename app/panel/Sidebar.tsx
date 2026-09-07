@@ -20,7 +20,7 @@ const ITEMS_MENU: ItemMenu[] = [
   { label: "PQRS", href: "/panel/pqrs", disponible: true, roles: ["administrador", "residente"] },
   { label: "Reservaciones", href: "/panel/reservas", disponible: true, roles: ["administrador", "residente"] },
   { label: "Visitas", href: "/panel/visitas", disponible: true, roles: ["administrador", "residente", "portero"] },
-  { label: "Parqueaderos", href: "/panel/parqueaderos", disponible: false, roles: ["administrador"] },
+  { label: "Parqueaderos", href: "/panel/parqueaderos", disponible: true, roles: ["administrador"] },
   { label: "Reportes de daños", href: "/panel/reportes", disponible: true, roles: ["administrador", "residente"] },
   { label: "Comunicados", href: "/panel/comunicados", disponible: true, roles: ["administrador", "residente", "portero"] },
   { label: "Cuotas", href: "/panel/cuotas", disponible: false, roles: ["administrador", "residente"] },

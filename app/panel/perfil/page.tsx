@@ -1,6 +1,8 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
+import { useCambiarContrasena } from "./useCambiarContrasena";
+import { FormInput } from "@/components/FormInput";
 
 // Traduce el valor interno del rol (usado en el codigo) a una
 // etiqueta legible para el usuario final - separar el "valor tecnico"
@@ -13,6 +15,9 @@ const ETIQUETAS_ROL: Record<string, string> = {
 
 export default function PerfilPage() {
   const { usuario } = useAuth();
+
+  const { actual, setActual, nueva, setNueva, confirmar, setConfirmar, errores, guardando, exito, handleSubmit } =
+  useCambiarContrasena();
 
   // Guardia defensiva: en la practica, el layout de /panel ya
   // garantiza que "usuario" existe aqui. Este chequeo extra es solo
@@ -67,6 +72,52 @@ export default function PerfilPage() {
             <dd className="mt-1 text-sm text-ink">{usuario.correo}</dd>
           </div>
         </dl>
+      </div>
+      {/* HU-42: cambiar contraseña */}
+      <div className="mt-6 max-w-lg rounded-xl border border-line bg-white p-8">
+        <p className="font-display text-lg font-semibold text-ink">Cambiar contraseña</p>
+
+        {exito && (
+          <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            ✓ Tu contraseña se actualizó correctamente.
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-4">
+          <FormInput
+            id="actual"
+            label="Contraseña actual"
+            type="password"
+            value={actual}
+            onChange={setActual}
+            error={errores.actual}
+          />
+          <FormInput
+            id="nueva"
+            label="Nueva contraseña"
+            type="password"
+            placeholder="Mínimo 8 caracteres"
+            value={nueva}
+            onChange={setNueva}
+            error={errores.nueva}
+          />
+          <FormInput
+            id="confirmar"
+            label="Confirmar nueva contraseña"
+            type="password"
+            value={confirmar}
+            onChange={setConfirmar}
+            error={errores.confirmar}
+          />
+
+          <button
+            type="submit"
+            disabled={guardando}
+            className="mt-2 rounded-lg bg-brand px-4 py-2.5 font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
+          >
+            {guardando ? "Guardando..." : "Actualizar contraseña"}
+          </button>
+        </form>
       </div>
     </div>
   );

@@ -2,12 +2,14 @@
 
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 import { useEditarPropiedad } from "./useEditarPropiedad";
 import { FormInput } from "@/components/FormInput";
 import { obtenerUsuarios } from "@/lib/usuariosStore";
 
 export default function EditarPropiedadPage() {
   const params = useParams<{ id: string }>();
+  const { usuario } = useAuth();
 
   const {
     propiedadExiste,
@@ -23,11 +25,22 @@ export default function EditarPropiedadPage() {
     handleSubmit,
   } = useEditarPropiedad(params.id);
 
-  // La lista de usuarios para poblar los selects de propietario y
-  // arrendatario - se recalcula en cada render, algo aceptable con
-  // pocos usuarios (si esto creciera a miles, seria candidato a
-  // useMemo, como vimos en el buscador de Usuarios).
   const usuarios = obtenerUsuarios();
+
+  // RF-19: solo el administrador edita propiedades. Este chequeo va
+  // ANTES del de "propiedadExiste" a proposito: no tiene sentido
+  // revelar si un id existe o no a alguien que de todas formas no
+  // tiene permiso de verlo.
+  if (usuario?.rol !== "administrador") {
+    return (
+      <div>
+        <p className="text-ink/60">No tienes permiso para acceder a esta sección.</p>
+        <Link href="/panel/propiedades" className="mt-4 inline-block text-brand hover:text-brand-dark">
+          ← Volver
+        </Link>
+      </div>
+    );
+  }
 
   if (!propiedadExiste) {
     return (
@@ -72,7 +85,6 @@ export default function EditarPropiedadPage() {
 
         <FormInput id="area" label="Área (m²)" type="number" value={area} onChange={setArea} error={errores.area} />
 
-        {/* HU-15: cambiar estado de ocupacion */}
         <div>
           <label htmlFor="estado" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
             Estado de ocupación
@@ -88,9 +100,6 @@ export default function EditarPropiedadPage() {
           </select>
         </div>
 
-        {/* HU-13: asignar propietario. Las <option> se generan
-            dinamicamente con .map() sobre la lista real de usuarios,
-            a diferencia de los selects anteriores con opciones fijas. */}
         <div>
           <label htmlFor="propietario" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
             Propietario
@@ -110,7 +119,6 @@ export default function EditarPropiedadPage() {
           </select>
         </div>
 
-        {/* HU-14: asignar arrendatario, mismo patron que propietario */}
         <div>
           <label htmlFor="arrendatario" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
             Arrendatario

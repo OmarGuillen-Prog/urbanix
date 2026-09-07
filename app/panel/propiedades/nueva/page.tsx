@@ -1,12 +1,28 @@
 "use client";
 
 import Link from "next/link";
+import { useAuth } from "@/context/AuthContext";
 import { useRegistrarPropiedad } from "./useRegistrarPropiedad";
 import { FormInput } from "@/components/FormInput";
 
 export default function NuevaPropiedadPage() {
+  const { usuario } = useAuth();
   const { numero, setNumero, torre, setTorre, tipo, setTipo, area, setArea, errores, guardando, handleSubmit } =
     useRegistrarPropiedad();
+
+  // Guardia de ruta: solo el administrador puede registrar
+  // propiedades (RF-17). Un residente que escriba esta URL a mano
+  // ve este mensaje en vez del formulario.
+  if (usuario?.rol !== "administrador") {
+    return (
+      <div>
+        <p className="text-ink/60">No tienes permiso para acceder a esta sección.</p>
+        <Link href="/panel/propiedades" className="mt-4 inline-block text-brand hover:text-brand-dark">
+          ← Volver
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>

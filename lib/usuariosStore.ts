@@ -45,3 +45,7 @@ export function actualizarUsuario(id: string, cambios: Partial<Usuario>): void {
 export function eliminarUsuario(id: string): void {
   usuarios = usuarios.filter((u) => u.id !== id);
 }
+
+export function obtenerUsuarioPorCorreo(correo: string): Usuario | undefined {
+  return usuarios.find((u) => u.correo === correo);
+}

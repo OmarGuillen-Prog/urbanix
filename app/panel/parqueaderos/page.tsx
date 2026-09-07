@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useParqueaderosLista } from "./useParqueaderosLista";
 
 export default function ParqueaderosPage() {
-  const { parqueaderos, propiedades, etiquetaPropiedad, handleAsignar, error } = useParqueaderosLista();
+  const { parqueaderos, propiedades, handleAsignar, error } = useParqueaderosLista();
 
   return (
     <div>

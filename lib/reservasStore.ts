@@ -7,11 +7,18 @@ export interface ZonaComun {
   capacidad: number;
 }
 
+export interface ZonaComun {
+  id: string;
+  nombre: string;
+  capacidad: number;
+  reglas: string; // RF-62: reglas de uso establecidas por el administrador
+}
+
 export const zonasComunes: ZonaComun[] = [
-  { id: "1", nombre: "Salón social", capacidad: 40 },
-  { id: "2", nombre: "Piscina", capacidad: 25 },
-  { id: "3", nombre: "Cancha múltiple", capacidad: 15 },
-  { id: "4", nombre: "Zona BBQ", capacidad: 20 },
+  { id: "1", nombre: "Salón social", capacidad: 40, reglas: "Prohibido fumar. Horario máximo hasta las 11pm. El aseo final es responsabilidad de quien reserva." },
+  { id: "2", nombre: "Piscina", capacidad: 25, reglas: "Uso obligatorio de gorro de baño. No se permiten envases de vidrio. Niños menores de 12 años deben estar acompañados." },
+  { id: "3", nombre: "Cancha múltiple", capacidad: 15, reglas: "Uso de calzado deportivo obligatorio. Horario de 6am a 10pm." },
+  { id: "4", nombre: "Zona BBQ", capacidad: 20, reglas: "Máximo 3 horas de uso continuo. Se debe dejar la parrilla limpia al terminar." },
 ];
 
 // Refleja "Reserva" del MER: fecha_reserva, hora_inicio, hora_fin,
@@ -90,4 +97,10 @@ export function crearReserva(datos: {
 // otros gracias al filtro de hayConflictoDeHorario de arriba).
 export function cancelarReserva(id: string): void {
   reservas = reservas.map((r) => (r.id === id ? { ...r, estado: "cancelada" } : r));
+}
+
+// RF-62: el administrador establece/actualiza las reglas de una zona
+export function actualizarReglasZona(idZona: string, reglas: string): void {
+  const zona = zonasComunes.find((z) => z.id === idZona);
+  if (zona) zona.reglas = reglas;
 }

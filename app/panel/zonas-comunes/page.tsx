@@ -2,6 +2,8 @@
 
 import { useEvaluacionesZonas } from "./useEvaluacionesZonas";
 import { promedioDeZona } from "@/lib/evaluacionesStore";
+import { useAuth } from "@/context/AuthContext";
+import { useReglasZonas } from "./useReglasZonas";  
 
 function formatearFecha(iso: string): string {
   return new Date(iso).toLocaleDateString("es-CO", { day: "numeric", month: "short", year: "numeric" });
@@ -28,6 +30,10 @@ export default function ZonasComunesPage() {
     comentario, setComentario,
     errores, guardando, handleSubmit,
   } = useEvaluacionesZonas();
+
+  const { usuario } = useAuth();
+  const esAdministrador = usuario?.rol === "administrador";
+  const { zonas: zonasConReglas, borradores, actualizarBorrador, guardandoId, handleGuardar } = useReglasZonas();
 
   return (
     <div>
@@ -136,6 +142,37 @@ export default function ZonasComunesPage() {
             </div>
           ))
         )}
+      </div>
+
+      {/* HU-47: reglas de uso por zona */}
+      <p className="mt-10 font-display text-lg font-semibold text-ink">Reglas de uso</p>
+
+      <div className="mt-4 flex flex-col gap-4">
+        {zonasConReglas.map((zona) => (
+          <div key={zona.id} className="rounded-xl border border-line bg-white p-5">
+            <p className="font-medium text-ink">{zona.nombre}</p>
+
+            {esAdministrador ? (
+              <>
+                <textarea
+                  rows={2}
+                  value={borradores[zona.id] ?? ""}
+                  onChange={(evento) => actualizarBorrador(zona.id, evento.target.value)}
+                  className="mt-2 w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+                />
+                <button
+                  onClick={() => handleGuardar(zona.id)}
+                  disabled={guardandoId === zona.id}
+                  className="mt-2 rounded-lg bg-brand px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
+                >
+                  {guardandoId === zona.id ? "Guardando..." : "Guardar reglas"}
+                </button>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-ink/70">{zona.reglas}</p>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

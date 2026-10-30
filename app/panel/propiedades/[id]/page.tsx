@@ -17,6 +17,8 @@ export default function EditarPropiedadPage() {
     torre, setTorre,
     tipo, setTipo,
     area, setArea,
+    habitaciones, setHabitaciones, 
+    banos, setBanos,
     estadoOcupacion, setEstadoOcupacion,
     idPropietario, setIdPropietario,
     idArrendatario, setIdArrendatario,
@@ -84,6 +86,8 @@ export default function EditarPropiedadPage() {
         </div>
 
         <FormInput id="area" label="Área (m²)" type="number" value={area} onChange={setArea} error={errores.area} />
+        <FormInput id="habitaciones" label="Habitaciones" type="number" value={habitaciones} onChange={setHabitaciones} />
+        <FormInput id="banos" label="Baños" type="number" value={banos} onChange={setBanos} />
 
         <div>
           <label htmlFor="estado" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
@@ -92,11 +96,14 @@ export default function EditarPropiedadPage() {
           <select
             id="estado"
             value={estadoOcupacion}
-            onChange={(evento) => setEstadoOcupacion(evento.target.value as "ocupado" | "vacio")}
+            onChange={(evento) =>
+              setEstadoOcupacion(evento.target.value as "ocupado" | "vacio" | "mantenimiento")
+            }
             className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
           >
-            <option value="vacio">Vacío</option>
+            <option value="vacio">Disponible</option>
             <option value="ocupado">Ocupado</option>
+            <option value="mantenimiento">En mantenimiento</option>
           </select>
         </div>
 

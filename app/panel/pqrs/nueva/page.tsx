@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePQRSForm } from "./usePQRSForm";
 import { FormInput } from "@/components/FormInput";
+import type { TipoPQRS } from "@/lib/pqrsStore";
 
 export default function NuevaPQRSPage() {
-  const { asunto, setAsunto, descripcion, setDescripcion, errores, guardando, handleSubmit } = usePQRSForm();
+  const { tipo, setTipo, asunto, setAsunto, descripcion, setDescripcion, errores, guardando, handleSubmit } =
+    usePQRSForm();
 
   return (
     <div>
@@ -13,14 +15,27 @@ export default function NuevaPQRSPage() {
         ← Volver al listado
       </Link>
 
-      <h1 className="mt-4 font-display text-3xl font-semibold text-ink">
-        Nueva PQRS
-      </h1>
-      <p className="mt-1 text-ink/60">
-        Cuéntanos tu petición, queja, reclamo o sugerencia.
-      </p>
+      <h1 className="mt-4 font-display text-3xl font-semibold text-ink">Nueva PQRS</h1>
+      <p className="mt-1 text-ink/60">Cuéntanos tu petición, queja, reclamo o sugerencia.</p>
 
       <form onSubmit={handleSubmit} className="mt-8 flex max-w-lg flex-col gap-5">
+        <div>
+          <label htmlFor="tipo" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
+            Tipo de solicitud
+          </label>
+          <select
+            id="tipo"
+            value={tipo}
+            onChange={(evento) => setTipo(evento.target.value as TipoPQRS)}
+            className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+          >
+            <option value="peticion">Petición</option>
+            <option value="queja">Queja</option>
+            <option value="reclamo">Reclamo</option>
+            <option value="sugerencia">Sugerencia</option>
+          </select>
+        </div>
+
         <FormInput
           id="asunto"
           label="Asunto"
@@ -30,8 +45,6 @@ export default function NuevaPQRSPage() {
           error={errores.asunto}
         />
 
-        {/* Un textarea no es un <input>, asi que no podemos usar
-            FormInput aqui - lo armamos a mano con el mismo estilo. */}
         <div>
           <label htmlFor="descripcion" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
             Descripción
@@ -44,9 +57,7 @@ export default function NuevaPQRSPage() {
             onChange={(evento) => setDescripcion(evento.target.value)}
             className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink placeholder:text-ink/30 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
           />
-          {errores.descripcion && (
-            <p className="mt-1.5 text-sm text-error">{errores.descripcion}</p>
-          )}
+          {errores.descripcion && <p className="mt-1.5 text-sm text-error">{errores.descripcion}</p>}
         </div>
 
         <button

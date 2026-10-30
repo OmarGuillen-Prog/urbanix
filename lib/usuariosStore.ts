@@ -49,3 +49,12 @@ export function eliminarUsuario(id: string): void {
 export function obtenerUsuarioPorCorreo(correo: string): Usuario | undefined {
   return usuarios.find((u) => u.correo === correo);
 }
+
+export function existeCorreoUsuario(correo: string): boolean {
+  return usuarios.some((u) => u.correo.toLowerCase() === correo.toLowerCase());
+}
+
+export function crearUsuario(datos: Omit<Usuario, "id">): void {
+  const nuevoId = (Math.max(0, ...usuarios.map((u) => Number(u.id))) + 1).toString();
+  usuarios = [...usuarios, { id: nuevoId, ...datos }];
+}

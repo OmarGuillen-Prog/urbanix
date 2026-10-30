@@ -15,19 +15,20 @@ export function useRegistrarPropiedad() {
   const [torre, setTorre] = useState("");
   const [tipo, setTipo] = useState<"apartamento" | "casa" | "local">("apartamento");
   const [area, setArea] = useState("");
+  const [habitaciones, setHabitaciones] = useState("");
+  const [banos, setBanos] = useState("");
   const [errores, setErrores] = useState<ErroresPropiedad>({});
   const [guardando, setGuardando] = useState(false);
 
   async function handleSubmit(evento: React.FormEvent) {
     evento.preventDefault();
 
-    // RF-18: validar datos obligatorios al registrar propiedades
     const nuevosErrores: ErroresPropiedad = {};
     if (numero.trim() === "") nuevosErrores.numero = "El número es obligatorio";
     if (torre.trim() === "") nuevosErrores.torre = "La torre/bloque es obligatoria";
-    if (area.trim() === "" || Number(area) <= 0) {
-      nuevosErrores.area = "Ingresa un área válida (mayor a 0)";
-    }
+    if (area.trim() === "" || Number(area) <= 0) nuevosErrores.area = "Ingresa un área válida (mayor a 0)";
+    if (habitaciones.trim() === "" || Number(habitaciones) < 0) nuevosErrores.habitaciones = "Ingresa un número válido";
+    if (banos.trim() === "" || Number(banos) < 0) nuevosErrores.banos = "Ingresa un número válido";
 
     if (Object.keys(nuevosErrores).length > 0) {
       setErrores(nuevosErrores);
@@ -38,14 +39,13 @@ export function useRegistrarPropiedad() {
     await new Promise((resolve) => setTimeout(resolve, 400));
     setGuardando(false);
 
-    // Toda propiedad nueva nace "vacia" y sin propietario/arrendatario
-    // asignado - eso se hace despues, desde la pantalla de edicion
-    // (HU-13/HU-14), no en el momento de crearla.
     crearPropiedad({
       numero,
       torre,
       tipo,
       area: Number(area),
+      habitaciones: Number(habitaciones),
+      banos: Number(banos),
       estadoOcupacion: "vacio",
       idPropietario: null,
       idArrendatario: null,
@@ -54,5 +54,15 @@ export function useRegistrarPropiedad() {
     router.push("/panel/propiedades");
   }
 
-  return { numero, setNumero, torre, setTorre, tipo, setTipo, area, setArea, errores, guardando, handleSubmit };
+  return {
+    numero, setNumero,
+    torre, setTorre,
+    tipo, setTipo,
+    area, setArea,
+    habitaciones, setHabitaciones,
+    banos, setBanos,
+    errores,
+    guardando,
+    handleSubmit,
+  };
 }

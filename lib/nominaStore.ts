@@ -1,3 +1,5 @@
+import { fechaEnMeses } from "./fechas";
+
 // Refleja "Nomina" del MER: nombre_empleado, cargo, salario,
 // fecha_pago, estado_pago, observaciones, id_administrador (FK).
 export interface RegistroNomina {
@@ -11,28 +13,35 @@ export interface RegistroNomina {
   correoAdministrador: string;
 }
 
-let registrosNomina: RegistroNomina[] = [
-  {
-    id: "1",
-    nombreEmpleado: "Andrés Vélez",
-    cargo: "Portero",
-    salario: 1400000,
-    fechaPago: "2026-08-31",
-    estadoPago: "pagado",
-    observaciones: "Pago mensual completo",
-    correoAdministrador: "omar@urbanix.com",
-  },
-  {
-    id: "2",
-    nombreEmpleado: "Rosa Martínez",
-    cargo: "Aseo y mantenimiento",
-    salario: 1300000,
-    fechaPago: "2026-09-30",
-    estadoPago: "pendiente",
-    observaciones: "",
-    correoAdministrador: "omar@urbanix.com",
-  },
+// --- Datos de ejemplo: 4 empleados durante 6 meses ---
+const EMPLEADOS = [
+  { nombreEmpleado: "Andrés Vélez", cargo: "Portero", salario: 1200000 },
+  { nombreEmpleado: "Rosa Martínez", cargo: "Aseo y mantenimiento", salario: 800000 },
+  { nombreEmpleado: "Jorge Pardo", cargo: "Jardinería", salario: 500000 },
+  { nombreEmpleado: "Luis Ortega", cargo: "Vigilancia nocturna", salario: 400000 },
 ];
+
+function generarNomina(): RegistroNomina[] {
+  const lista: RegistroNomina[] = [];
+  let id = 1;
+
+  for (let mesesAtras = 5; mesesAtras >= 0; mesesAtras--) {
+    for (const empleado of EMPLEADOS) {
+      lista.push({
+        id: String(id++),
+        ...empleado,
+        fechaPago: fechaEnMeses(mesesAtras, 28),
+        // Los meses anteriores ya se pagaron; el actual queda pendiente
+        estadoPago: mesesAtras === 0 ? "pendiente" : "pagado",
+        observaciones: "",
+        correoAdministrador: "omar@urbanix.com",
+      });
+    }
+  }
+  return lista;
+}
+
+let registrosNomina: RegistroNomina[] = generarNomina();
 
 export function obtenerNomina(): RegistroNomina[] {
   return registrosNomina;

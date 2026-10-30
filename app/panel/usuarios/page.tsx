@@ -1,7 +1,10 @@
+// app/panel/usuarios/page.tsx
 "use client";
 
 import Link from "next/link";
 import { useUsuariosLista } from "./useUsuariosLista";
+import type { Rol } from "@/context/AuthContext";
+import { ResumenTarjetas } from "@/components/ResumenTarjetas";
 
 const ETIQUETAS_ROL: Record<string, string> = {
   administrador: "Administrador",
@@ -10,7 +13,17 @@ const ETIQUETAS_ROL: Record<string, string> = {
 };
 
 export default function UsuariosPage() {
-  const { busqueda, setBusqueda, usuariosFiltrados, handleEliminar } = useUsuariosLista();
+  const {
+    busqueda, setBusqueda,
+    filtroRol, setFiltroRol,
+    filtroEstado, setFiltroEstado,
+    usuariosFiltrados,
+    handleEliminar,
+    totalUsuarios,
+    usuariosActivos,
+    totalPropietarios,
+    totalArrendatarios,
+  } = useUsuariosLista();
 
   return (
     <div>
@@ -23,15 +36,54 @@ export default function UsuariosPage() {
             {usuariosFiltrados.length} usuario(s) encontrado(s)
           </p>
         </div>
+
+        <Link
+          href="/panel/usuarios/nuevo"
+          className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
+        >
+          + Nuevo usuario
+        </Link>
       </div>
 
-      <input
-        type="text"
-        placeholder="Buscar por nombre o correo..."
-        value={busqueda}
-        onChange={(evento) => setBusqueda(evento.target.value)}
-        className="mt-6 w-full max-w-sm rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink placeholder:text-ink/30 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+      <ResumenTarjetas
+        items={[
+          { etiqueta: "Total usuarios", valor: totalUsuarios, icono: "👥", tono: "brand" },
+          { etiqueta: "Usuarios activos", valor: usuariosActivos, icono: "✅", tono: "verde" },
+          { etiqueta: "Propietarios", valor: totalPropietarios, icono: "🏡", tono: "dorado" },
+          { etiqueta: "Arrendatarios", valor: totalArrendatarios, icono: "📝", tono: "gris" },
+        ]}
       />
+
+      <div className="mt-6 flex flex-wrap gap-3">
+        <input
+          type="text"
+          placeholder="Buscar por nombre o correo..."
+          value={busqueda}
+          onChange={(evento) => setBusqueda(evento.target.value)}
+          className="w-full max-w-sm rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink placeholder:text-ink/30 focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+        />
+
+        <select
+          value={filtroRol}
+          onChange={(evento) => setFiltroRol(evento.target.value as Rol | "todos")}
+          className="rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+        >
+          <option value="todos">Todos los roles</option>
+          <option value="administrador">Administrador</option>
+          <option value="residente">Residente</option>
+          <option value="portero">Portero</option>
+        </select>
+
+        <select
+          value={filtroEstado}
+          onChange={(evento) => setFiltroEstado(evento.target.value as "activo" | "inactivo" | "todos")}
+          className="rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
+        >
+          <option value="todos">Todos los estados</option>
+          <option value="activo">Activo</option>
+          <option value="inactivo">Inactivo</option>
+        </select>
+      </div>
 
       <div className="mt-6 overflow-hidden rounded-xl border border-line bg-white">
         <table className="w-full text-left text-sm">
@@ -48,7 +100,7 @@ export default function UsuariosPage() {
             {usuariosFiltrados.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-4 py-8 text-center text-ink/40">
-                  No se encontraron usuarios con ese criterio de búsqueda.
+                  No se encontraron usuarios con esos criterios.
                 </td>
               </tr>
             ) : (

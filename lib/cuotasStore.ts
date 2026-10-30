@@ -1,5 +1,4 @@
-// lib/cuotasStore.ts
-
+import { fechaEnMeses } from "./fechas";
 // Refleja "Cuota" del MER: valor, fecha_generacion, fecha_limite,
 // estado_pago, descripcion, id_propiedad (FK). Solo guardamos
 // "pendiente" o "pagada" - "vencida" se CALCULA, no se guarda (ver
@@ -14,12 +13,35 @@ export interface Cuota {
   estadoPago: "pendiente" | "pagada";
 }
 
-let cuotas: Cuota[] = [
-  { id: "1", idPropiedad: "1", valor: 250000, descripcion: "Administración - Septiembre", fechaGeneracion: "2026-09-01T08:00:00.000Z", fechaLimite: "2026-09-10", estadoPago: "pendiente" },
-  { id: "2", idPropiedad: "1", valor: 250000, descripcion: "Administración - Agosto", fechaGeneracion: "2026-08-01T08:00:00.000Z", fechaLimite: "2026-08-10", estadoPago: "pagada" },
-  { id: "3", idPropiedad: "3", valor: 280000, descripcion: "Administración - Septiembre", fechaGeneracion: "2026-09-01T08:00:00.000Z", fechaLimite: "2026-09-10", estadoPago: "pendiente" },
-  { id: "4", idPropiedad: "3", valor: 280000, descripcion: "Administración - Agosto", fechaGeneracion: "2026-08-01T08:00:00.000Z", fechaLimite: "2026-08-10", estadoPago: "pendiente" },
-];
+// --- Datos de ejemplo: 6 meses de historial (el mes actual y los 5 anteriores) ---
+const VALOR_CUOTA: Record<string, number> = { "1": 1200000, "2": 900000, "3": 1100000, "4": 1300000 };
+// Cuotas que quedaron SIN pagar, con la forma "idPropiedad-mesesAtras" (0 = mes actual)
+const SIN_PAGAR = new Set(["2-4", "3-3", "4-2", "1-1", "2-0"]);
+
+function generarCuotas(): Cuota[] {
+  const lista: Cuota[] = [];
+  let id = 1;
+
+  for (let mesesAtras = 5; mesesAtras >= 0; mesesAtras--) {
+    const nombreMes = new Date(`${fechaEnMeses(mesesAtras, 1)}T00:00:00`).toLocaleDateString("es-CO", { month: "long" });
+    const mes = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+
+    for (const idPropiedad of Object.keys(VALOR_CUOTA)) {
+      lista.push({
+        id: String(id++),
+        idPropiedad,
+        valor: VALOR_CUOTA[idPropiedad],
+        descripcion: `Administración - ${mes}`,
+        fechaGeneracion: new Date(`${fechaEnMeses(mesesAtras, 1)}T08:00:00`).toISOString(),
+        fechaLimite: fechaEnMeses(mesesAtras, 10),
+        estadoPago: SIN_PAGAR.has(`${idPropiedad}-${mesesAtras}`) ? "pendiente" : "pagada",
+      });
+    }
+  }
+  return lista;
+}
+
+let cuotas: Cuota[] = generarCuotas();
 
 export function obtenerTodasLasCuotas(): Cuota[] {
   return cuotas;
@@ -67,4 +89,16 @@ export function diasParaVencer(fechaLimite: string): number {
   const limite = new Date(`${fechaLimite}T00:00:00`);
   const diferenciaMs = limite.getTime() - hoy.getTime();
   return Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
+}
+
+// Devuelve la cuota mas reciente de una propiedad (o null si no
+// tiene ninguna) - la usamos para mostrar "cuota actual" en la
+// tarjeta, sin tener que decidir aqui si esta pagada o no.
+export function obtenerUltimaCuotaDePropiedad(idPropiedad: string): Cuota | null {
+  const deLaPropiedad = obtenerCuotasPorPropiedad(idPropiedad);
+  if (deLaPropiedad.length === 0) return null;
+
+  return [...deLaPropiedad].sort(
+    (a, b) => new Date(b.fechaGeneracion).getTime() - new Date(a.fechaGeneracion).getTime()
+  )[0];
 }

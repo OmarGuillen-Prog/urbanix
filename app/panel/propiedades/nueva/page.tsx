@@ -7,7 +7,7 @@ import { FormInput } from "@/components/FormInput";
 
 export default function NuevaPropiedadPage() {
   const { usuario } = useAuth();
-  const { numero, setNumero, torre, setTorre, tipo, setTipo, area, setArea, errores, guardando, handleSubmit } =
+  const { numero, setNumero, torre, setTorre, tipo, setTipo, area, setArea, habitaciones, setHabitaciones, banos, setBanos, errores, guardando, handleSubmit } =
     useRegistrarPropiedad();
 
   // Guardia de ruta: solo el administrador puede registrar
@@ -77,6 +77,8 @@ export default function NuevaPropiedadPage() {
           onChange={setArea}
           error={errores.area}
         />
+        <FormInput id="habitaciones" label="Habitaciones" type="number" placeholder="Ej: 3" value={habitaciones} onChange={setHabitaciones} error={errores.habitaciones} />
+        <FormInput id="banos" label="Baños" type="number" placeholder="Ej: 2" value={banos} onChange={setBanos} error={errores.banos} />
 
         <button
           type="submit"

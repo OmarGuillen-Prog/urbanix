@@ -6,21 +6,23 @@ export interface Propiedad {
   numero: string;
   torre: string;
   tipo: "apartamento" | "casa" | "local";
-  area: number;
-  estadoOcupacion: "ocupado" | "vacio";
+  estadoOcupacion: "ocupado" | "vacio" | "mantenimiento";
   // "string | null": o tiene el id de un usuario, o no tiene a nadie
   // asignado todavia. Lo distinguimos explicitamente de un string
   // vacio "" para que sea imposible confundir "sin asignar" con
   // "un id invalido".
+  area: number;
+  habitaciones: number;
+  banos: number;
   idPropietario: string | null;
   idArrendatario: string | null;
 }
 
 let propiedades: Propiedad[] = [
-  { id: "1", numero: "101", torre: "A", tipo: "apartamento", area: 68, estadoOcupacion: "ocupado", idPropietario: "3", idArrendatario: null },
-  { id: "2", numero: "102", torre: "A", tipo: "apartamento", area: 72, estadoOcupacion: "vacio", idPropietario: null, idArrendatario: null },
-  { id: "3", numero: "201", torre: "B", tipo: "apartamento", area: 90, estadoOcupacion: "ocupado", idPropietario: "2", idArrendatario: "6" },
-  { id: "4", numero: "1", torre: "C", tipo: "casa", area: 150, estadoOcupacion: "vacio", idPropietario: null, idArrendatario: null },
+  { id: "1", numero: "101", torre: "A", tipo: "apartamento", area: 68, habitaciones: 3, banos: 2, estadoOcupacion: "ocupado", idPropietario: "3", idArrendatario: null },
+  { id: "2", numero: "102", torre: "A", tipo: "apartamento", area: 72, habitaciones: 2, banos: 1, estadoOcupacion: "vacio", idPropietario: null, idArrendatario: null },
+  { id: "3", numero: "201", torre: "B", tipo: "apartamento", area: 90, habitaciones: 3, banos: 2, estadoOcupacion: "ocupado", idPropietario: "2", idArrendatario: "6" },
+  { id: "4", numero: "1", torre: "C", tipo: "casa", area: 150, habitaciones: 4, banos: 3, estadoOcupacion: "vacio", idPropietario: null, idArrendatario: null },
 ];
 
 export function obtenerPropiedades(): Propiedad[] {

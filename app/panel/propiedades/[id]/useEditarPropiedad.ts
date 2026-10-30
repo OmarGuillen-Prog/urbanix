@@ -21,6 +21,8 @@ export function useEditarPropiedad(id: string) {
   const [torre, setTorre] = useState(propiedadOriginal?.torre ?? "");
   const [tipo, setTipo] = useState<Propiedad["tipo"]>(propiedadOriginal?.tipo ?? "apartamento");
   const [area, setArea] = useState(String(propiedadOriginal?.area ?? ""));
+  const [habitaciones, setHabitaciones] = useState(String(propiedadOriginal?.habitaciones ?? ""));
+  const [banos, setBanos] = useState(String(propiedadOriginal?.banos ?? ""));
   const [estadoOcupacion, setEstadoOcupacion] = useState<Propiedad["estadoOcupacion"]>(
     propiedadOriginal?.estadoOcupacion ?? "vacio"
   );
@@ -57,6 +59,8 @@ export function useEditarPropiedad(id: string) {
       torre,
       tipo,
       area: Number(area),
+      habitaciones: Number(habitaciones),
+      banos: Number(banos),
       estadoOcupacion,
       idPropietario: idPropietario === "" ? null : idPropietario,
       idArrendatario: idArrendatario === "" ? null : idArrendatario,
@@ -71,6 +75,8 @@ export function useEditarPropiedad(id: string) {
     torre, setTorre,
     tipo, setTipo,
     area, setArea,
+    habitaciones, setHabitaciones, 
+    banos, setBanos,
     estadoOcupacion, setEstadoOcupacion,
     idPropietario, setIdPropietario,
     idArrendatario, setIdArrendatario,

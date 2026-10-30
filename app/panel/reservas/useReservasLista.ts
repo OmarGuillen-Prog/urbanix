@@ -1,32 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { obtenerReservasPorUsuario, obtenerZonas, cancelarReserva, type Reserva } from "@/lib/reservasStore";
+import {
+  obtenerTodasLasReservas,
+  obtenerReservasPorUsuario,
+  obtenerZonas,
+  codigoReserva,
+  nombreDeZona,
+  hoyLocal,
+  type Reserva,
+  type EstadoReserva,
+} from "@/lib/reservasStore";
+import { nombrePorCorreo } from "@/lib/personasHelpers";
 
 export function useReservasLista() {
   const { usuario } = useAuth();
-  const zonas = obtenerZonas();
+  const esAdministrador = usuario?.rol === "administrador";
 
-  const [reservas, setReservas] = useState<Reserva[]>(() =>
-    usuario ? obtenerReservasPorUsuario(usuario.correo) : []
-  );
+  // El administrador ve todas; el residente, solo las suyas
+  const [reservas] = useState<Reserva[]>(() => {
+    if (!usuario) return [];
+    return esAdministrador ? obtenerTodasLasReservas() : obtenerReservasPorUsuario(usuario.correo);
+  });
 
-  function refrescar() {
-    if (usuario) setReservas(obtenerReservasPorUsuario(usuario.correo));
-  }
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroZona, setFiltroZona] = useState<string>("todas");
+  const [filtroEstado, setFiltroEstado] = useState<EstadoReserva | "todos">("todos");
 
-  function nombreZona(idZona: string): string {
-    return zonas.find((z) => z.id === idZona)?.nombre ?? "Zona desconocida";
-  }
+  const reservasFiltradas = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase();
 
-  function handleCancelar(id: string) {
-    const confirmado = window.confirm("¿Seguro que quieres cancelar esta reserva?");
-    if (!confirmado) return;
+    return reservas.filter((r) => {
+      const coincideTexto =
+        termino === "" ||
+        codigoReserva(r.id).toLowerCase().includes(termino) ||
+        nombreDeZona(r.idZona).toLowerCase().includes(termino) ||
+        nombrePorCorreo(r.correoResidente).toLowerCase().includes(termino);
+      const coincideZona = filtroZona === "todas" || r.idZona === filtroZona;
+      const coincideEstado = filtroEstado === "todos" || r.estado === filtroEstado;
+      return coincideTexto && coincideZona && coincideEstado;
+    });
+  }, [reservas, busqueda, filtroZona, filtroEstado]);
 
-    cancelarReserva(id);
-    refrescar();
-  }
+  // --- Metricas: solo reservas del MES ACTUAL (como en tu referencia) ---
+  const mesActual = hoyLocal().slice(0, 7); // "2026-10"
+  const delMes = reservas.filter((r) => r.fecha.startsWith(mesActual));
+  const totalMes = delMes.length;
+  const confirmadas = delMes.filter((r) => r.estado === "confirmada").length;
+  const pendientes = delMes.filter((r) => r.estado === "pendiente").length;
+  const canceladas = delMes.filter((r) => r.estado === "cancelada").length;
 
-  return { reservas, nombreZona, handleCancelar, refrescar };
+  return {
+    esAdministrador,
+    zonas: obtenerZonas(),
+    reservasFiltradas,
+    busqueda, setBusqueda,
+    filtroZona, setFiltroZona,
+    filtroEstado, setFiltroEstado,
+    totalMes,
+    confirmadas,
+    pendientes,
+    canceladas,
+  };
 }

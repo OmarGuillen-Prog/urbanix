@@ -1,30 +1,51 @@
 "use client";
 
 import { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import { obtenerZonas, actualizarReglasZona } from "@/lib/reservasStore";
 
 export function useReglasZonas() {
-  const [zonas, setZonas] = useState(() => obtenerZonas());
-  // Un borrador de texto por cada zona, mientras el administrador
-  // edita - separado de los datos "guardados" en el store, para que
-  // escribir no aplique el cambio letra por letra.
-  const [borradores, setBorradores] = useState<Record<string, string>>(() =>
-    Object.fromEntries(obtenerZonas().map((z) => [z.id, z.reglas]))
-  );
-  const [guardandoId, setGuardandoId] = useState<string | null>(null);
+  const { usuario } = useAuth();
 
-  function actualizarBorrador(idZona: string, texto: string) {
-    setBorradores((anterior) => ({ ...anterior, [idZona]: texto }));
+  const [zonas, setZonas] = useState(() => [...obtenerZonas()]);
+  // Un solo estado dice CUAL zona se esta editando (null = ninguna).
+  // Antes habia un cuadro de texto por zona siempre abierto.
+  const [idEnEdicion, setIdEnEdicion] = useState<string | null>(null);
+  const [borrador, setBorrador] = useState("");
+  const [guardando, setGuardando] = useState(false);
+
+  function iniciarEdicion(idZona: string, reglasActuales: string) {
+    setIdEnEdicion(idZona);
+    setBorrador(reglasActuales);
   }
 
-  async function handleGuardar(idZona: string) {
-    setGuardandoId(idZona);
+  function cancelarEdicion() {
+    setIdEnEdicion(null);
+    setBorrador("");
+  }
+
+  async function guardarEdicion() {
+    if (idEnEdicion === null) return;
+
+    setGuardando(true);
     await new Promise((resolve) => setTimeout(resolve, 300));
-    setGuardandoId(null);
+    setGuardando(false);
 
-    actualizarReglasZona(idZona, borradores[idZona] ?? "");
-    setZonas(obtenerZonas());
+    actualizarReglasZona(idEnEdicion, borrador.trim());
+    // Copia nueva del arreglo para que React note el cambio (la zona se edita dentro del store)
+    setZonas([...obtenerZonas()]);
+    cancelarEdicion();
   }
 
-  return { zonas, borradores, actualizarBorrador, guardandoId, handleGuardar };
+  return {
+    zonas,
+    esAdministrador: usuario?.rol === "administrador",
+    idEnEdicion,
+    borrador,
+    setBorrador,
+    guardando,
+    iniciarEdicion,
+    cancelarEdicion,
+    guardarEdicion,
+  };
 }

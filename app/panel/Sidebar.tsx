@@ -22,6 +22,7 @@ const ITEMS_MENU: ItemMenu[] = [
   { label: "Zonas comunes", href: "/panel/zonas-comunes", disponible: true, roles: ["administrador", "residente"] },
   { label: "Visitas", href: "/panel/visitas", disponible: true, roles: ["administrador", "residente", "portero"] },
   { label: "Parqueaderos", href: "/panel/parqueaderos", disponible: true, roles: ["administrador"] },
+  { label: "Reportes", href: "/panel/estadisticas", disponible: true, roles: ["administrador"] },
   { label: "Reportes de daños", href: "/panel/reportes", disponible: true, roles: ["administrador", "residente"] },
   { label: "Comunicados", href: "/panel/comunicados", disponible: true, roles: ["administrador", "residente", "portero"] },
   { label: "Cuotas", href: "/panel/cuotas", disponible: true, roles: ["administrador", "residente"] },

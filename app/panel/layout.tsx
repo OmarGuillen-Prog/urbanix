@@ -31,7 +31,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex bg-canvas font-sans text-ink">
+    <div className="flex h-screen overflow-hidden bg-canvas font-sans text-ink">
       <Sidebar />
       <div className="flex flex-1 flex-col">
         <Topbar />

@@ -1,17 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useVehiculosForm } from "./useVehiculosForm";
-import { FormInput } from "@/components/FormInput";
+import { useVehiculosLista } from "./useVehiculosLista";
+import { nombrePorCorreo } from "@/lib/personasHelpers";
 
 export default function VehiculosPage() {
-  const {
-    usuarios, parqueaderosDisponibles, vehiculos,
-    placa, setPlaca, marca, setMarca, modelo, setModelo, color, setColor,
-    tipoVehiculo, setTipoVehiculo, correoPropietario, setCorreoPropietario,
-    idParqueadero, setIdParqueadero,
-    errores, guardando, handleSubmit,
-  } = useVehiculosForm();
+  const { esAdministrador, vehiculos, etiquetaParqueadero } = useVehiculosLista();
+
+  if (!esAdministrador) {
+    return (
+      <div>
+        <p className="text-ink/60">No tienes permiso para acceder a esta sección.</p>
+        <Link href="/panel" className="mt-4 inline-block text-brand hover:text-brand-dark">
+          ← Volver al panel
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -19,107 +24,83 @@ export default function VehiculosPage() {
         ← Volver a parqueaderos
       </Link>
 
-      <h1 className="mt-4 font-display text-3xl font-semibold text-ink">Vehículos</h1>
-
-      <form onSubmit={handleSubmit} className="mt-8 max-w-2xl rounded-xl border border-line bg-white p-6">
-        <p className="font-display text-lg font-semibold text-ink">Registrar vehículo</p>
-
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <FormInput id="placa" label="Placa" placeholder="ABC123" value={placa} onChange={setPlaca} error={errores.placa} />
-          <FormInput id="marca" label="Marca" placeholder="Ej: Mazda" value={marca} onChange={setMarca} error={errores.marca} />
-          <FormInput id="modelo" label="Modelo" placeholder="Ej: 3" value={modelo} onChange={setModelo} />
-          <FormInput id="color" label="Color" placeholder="Ej: Gris" value={color} onChange={setColor} />
-
-          <div>
-            <label htmlFor="tipoVehiculo" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
-              Tipo
-            </label>
-            <select
-              id="tipoVehiculo"
-              value={tipoVehiculo}
-              onChange={(evento) => setTipoVehiculo(evento.target.value as "carro" | "moto")}
-              className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-            >
-              <option value="carro">Carro</option>
-              <option value="moto">Moto</option>
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="propietario" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
-              Propietario
-            </label>
-            <select
-              id="propietario"
-              value={correoPropietario}
-              onChange={(evento) => setCorreoPropietario(evento.target.value)}
-              className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-            >
-              {usuarios.map((usuario) => (
-                <option key={usuario.id} value={usuario.correo}>
-                  {usuario.nombres} {usuario.apellidos}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="parqueadero" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
-              Parqueadero (opcional)
-            </label>
-            <select
-              id="parqueadero"
-              value={idParqueadero}
-              onChange={(evento) => setIdParqueadero(evento.target.value)}
-              className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
-            >
-              <option value="">Sin asignar</option>
-              {parqueaderosDisponibles.map((parqueadero) => (
-                <option key={parqueadero.id} value={parqueadero.id}>
-                  {parqueadero.numero} ({parqueadero.tipo})
-                </option>
-              ))}
-            </select>
-          </div>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="font-display text-3xl font-semibold text-ink">Vehículos</h1>
+          <p className="mt-1 text-ink/60">
+            {vehiculos.length} vehículo(s) registrado(s) y su parqueadero asignado
+          </p>
         </div>
 
-        <button
-          type="submit"
-          disabled={guardando}
-          className="mt-4 rounded-lg bg-brand px-4 py-2.5 font-medium text-white transition-colors hover:bg-brand-dark disabled:opacity-50"
+        <Link
+          href="/panel/parqueaderos/vehiculos/nuevo"
+          className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
         >
-          {guardando ? "Guardando..." : "Registrar vehículo"}
-        </button>
-      </form>
+          + Registrar vehículo
+        </Link>
+      </div>
 
-      <p className="mt-10 font-display text-lg font-semibold text-ink">Vehículos registrados</p>
-
-      <div className="mt-4 overflow-hidden rounded-xl border border-line bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-line bg-canvas">
-            <tr>
-              <th className="px-4 py-3 font-medium text-ink/60">Placa</th>
-              <th className="px-4 py-3 font-medium text-ink/60">Marca / Modelo</th>
-              <th className="px-4 py-3 font-medium text-ink/60">Tipo</th>
-              <th className="px-4 py-3 font-medium text-ink/60">Propietario</th>
-            </tr>
-          </thead>
-          <tbody>
-            {vehiculos.map((vehiculo) => {
-              const propietario = usuarios.find((u) => u.correo === vehiculo.correoPropietario);
-              return (
-                <tr key={vehiculo.id} className="border-b border-line last:border-0">
-                  <td className="px-4 py-3 font-medium text-ink">{vehiculo.placa}</td>
-                  <td className="px-4 py-3 text-ink/70">{vehiculo.marca} {vehiculo.modelo}</td>
-                  <td className="px-4 py-3 capitalize text-ink/70">{vehiculo.tipoVehiculo}</td>
-                  <td className="px-4 py-3 text-ink/70">
-                    {propietario ? `${propietario.nombres} ${propietario.apellidos}` : "—"}
+      <div className="mt-6 overflow-hidden rounded-xl border border-line bg-white">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-line bg-canvas">
+              <tr className="text-xs uppercase tracking-wide text-ink/50">
+                <th className="px-4 py-3 font-medium">Placa</th>
+                <th className="px-4 py-3 font-medium">Vehículo</th>
+                <th className="px-4 py-3 font-medium">Color</th>
+                <th className="px-4 py-3 font-medium">Tipo</th>
+                <th className="px-4 py-3 font-medium">Propietario</th>
+                <th className="px-4 py-3 font-medium">Parqueadero</th>
+                <th className="px-4 py-3 font-medium">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vehiculos.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-10 text-center text-ink/40">
+                    Aún no hay vehículos registrados.
                   </td>
                 </tr>
-              );
-            })}
-          </tbody>
-        </table>
+              ) : (
+                vehiculos.map((vehiculo) => {
+                  const parqueadero = etiquetaParqueadero(vehiculo.idParqueadero);
+                  return (
+                    <tr key={vehiculo.id} className="border-b border-line last:border-0 hover:bg-canvas/60">
+                      <td className="whitespace-nowrap px-4 py-3 font-medium text-ink">{vehiculo.placa}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-ink/70">
+                        {vehiculo.marca} {vehiculo.modelo}
+                      </td>
+                      <td className="px-4 py-3 text-ink/70">{vehiculo.color || "—"}</td>
+                      <td className="px-4 py-3 capitalize text-ink/70">{vehiculo.tipoVehiculo}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-ink/70">
+                        {nombrePorCorreo(vehiculo.correoPropietario)}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        {parqueadero ? (
+                          <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                            {parqueadero}
+                          </span>
+                        ) : (
+                          <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-500">
+                            Sin parqueadero
+                          </span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-4 py-3">
+                        <Link
+                          href={`/panel/parqueaderos/vehiculos/${vehiculo.id}`}
+                          className="text-sm font-medium text-brand hover:text-brand-dark"
+                        >
+                          Editar
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

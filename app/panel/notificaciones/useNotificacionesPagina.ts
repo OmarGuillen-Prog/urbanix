@@ -1,4 +1,3 @@
-// app/panel/notificaciones/useNotificacionesPagina.ts
 "use client";
 
 import { useState } from "react";

@@ -1,4 +1,3 @@
-// lib/useNotificaciones.ts
 "use client";
 
 import { useSyncExternalStore } from "react";

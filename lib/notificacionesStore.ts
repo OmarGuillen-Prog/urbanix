@@ -1,4 +1,3 @@
-// lib/notificacionesStore.ts
 // Bandeja de notificaciones. Los demas modulos la USAN para avisar de eventos
 // (notificarUsuario / notificarARol); esta nunca importa de ellos, asi no hay ciclos.
 import { obtenerUsuarios } from "./usuariosStore";
@@ -150,4 +149,17 @@ export function eliminarNotificacion(id: string, correo: string): void {
 export function eliminarTodas(correo: string): void {
   notificaciones = notificaciones.filter((n) => n.correoDestino !== correo);
   avisarCambio();
+}
+
+// Igual que notificarUsuario, pero NO crea la notificacion si esa persona ya tiene
+// una identica SIN LEER (evita llenar la bandeja si se pulsa "enviar" dos veces).
+// Devuelve true si la creo.
+export function notificarSinDuplicar(correoDestino: string, datos: DatosNotificacion): boolean {
+  const yaExiste = notificaciones.some(
+    (n) => n.correoDestino === correoDestino && !n.leida && n.titulo === datos.titulo && n.mensaje === datos.mensaje
+  );
+  if (yaExiste) return false;
+
+  notificarUsuario(correoDestino, datos);
+  return true;
 }

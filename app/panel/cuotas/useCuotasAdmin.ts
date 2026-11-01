@@ -1,58 +1,92 @@
 "use client";
 
-import { useState } from "react";
-import { obtenerTodasLasCuotas, crearCuota, type Cuota } from "@/lib/cuotasStore";
-import { obtenerPropiedades } from "@/lib/propiedadesStore";
+import { useState, useMemo } from "react";
+import {
+  obtenerTodasLasCuotas,
+  estadoVisual,
+  resumenDeCuotas,
+  detalleDeCuota,
+  codigoCuota,
+  mesesConCuotas,
+  enviarRecordatorios,
+  type Cuota,
+  type EstadoVisualCuota,
+} from "@/lib/cuotasStore";
 
-interface ErroresCuota {
-  [campo: string]: string;
-}
+const TAMANO_PAGINA = 8;
 
 export function useCuotasAdmin() {
-  const propiedades = obtenerPropiedades();
+  const [cuotas] = useState<Cuota[]>(() => obtenerTodasLasCuotas());
 
-  const [cuotas, setCuotas] = useState<Cuota[]>(() => obtenerTodasLasCuotas());
-  const [idPropiedad, setIdPropiedad] = useState(propiedades[0]?.id ?? "");
-  const [valor, setValor] = useState("");
-  const [descripcion, setDescripcion] = useState("");
-  const [fechaLimite, setFechaLimite] = useState("");
-  const [errores, setErrores] = useState<ErroresCuota>({});
-  const [guardando, setGuardando] = useState(false);
+  const [busqueda, setBusqueda] = useState("");
+  const [filtroEstado, setFiltroEstado] = useState<EstadoVisualCuota | "todos">("todos");
+  const [filtroPeriodo, setFiltroPeriodo] = useState<string>("todos"); // "todos" o "2026-11"
+  const [pagina, setPagina] = useState(1);
+  const [mensajeRecordatorios, setMensajeRecordatorios] = useState<string | null>(null);
 
-  async function handleSubmit(evento: React.FormEvent) {
-    evento.preventDefault();
+  // Cada cambio de filtro vuelve a la pagina 1 en el manejador (no en un useEffect)
+  function cambiarBusqueda(valor: string) { setBusqueda(valor); setPagina(1); }
+  function cambiarEstado(valor: EstadoVisualCuota | "todos") { setFiltroEstado(valor); setPagina(1); }
+  function cambiarPeriodo(valor: string) { setFiltroPeriodo(valor); setPagina(1); }
 
-    const nuevosErrores: ErroresCuota = {};
-    if (valor.trim() === "" || Number(valor) <= 0) nuevosErrores.valor = "Ingresa un valor válido";
-    if (descripcion.trim() === "") nuevosErrores.descripcion = "La descripción es obligatoria";
-    if (fechaLimite === "") nuevosErrores.fechaLimite = "La fecha límite es obligatoria";
+  const periodos = mesesConCuotas();
 
-    if (Object.keys(nuevosErrores).length > 0) {
-      setErrores(nuevosErrores);
-      return;
-    }
+  // El PERIODO define el "alcance": tarjetas y barra de progreso miran solo ese mes.
+  // La busqueda y el estado solo afectan a la tabla.
+  const enPeriodo = useMemo(
+    () => (filtroPeriodo === "todos" ? cuotas : cuotas.filter((c) => c.fechaLimite.startsWith(filtroPeriodo))),
+    [cuotas, filtroPeriodo]
+  );
 
-    setGuardando(true);
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    setGuardando(false);
+  const resumen = resumenDeCuotas(enPeriodo);
+  const etiquetaPeriodo =
+    filtroPeriodo === "todos" ? "todos los periodos" : (periodos.find((p) => p.valor === filtroPeriodo)?.etiqueta ?? filtroPeriodo);
 
-    crearCuota({ idPropiedad, valor: Number(valor), descripcion, fechaLimite });
-    setCuotas(obtenerTodasLasCuotas());
-    setValor("");
-    setDescripcion("");
-    setFechaLimite("");
-    setErrores({});
+  const filtradas = useMemo(() => {
+    const termino = busqueda.trim().toLowerCase();
+
+    return enPeriodo.filter((c) => {
+      const detalle = detalleDeCuota(c);
+      const coincideTexto =
+        termino === "" ||
+        codigoCuota(c.id).toLowerCase().includes(termino) ||
+        detalle.unidad.toLowerCase().includes(termino) ||
+        detalle.residente.toLowerCase().includes(termino) ||
+        c.descripcion.toLowerCase().includes(termino);
+      const coincideEstado = filtroEstado === "todos" || estadoVisual(c) === filtroEstado;
+      return coincideTexto && coincideEstado;
+    });
+  }, [enPeriodo, busqueda, filtroEstado]);
+
+  // --- Paginacion ---
+  const totalPaginas = Math.max(1, Math.ceil(filtradas.length / TAMANO_PAGINA));
+  const paginaActual = Math.min(pagina, totalPaginas);
+  const inicio = (paginaActual - 1) * TAMANO_PAGINA;
+  const visibles = filtradas.slice(inicio, inicio + TAMANO_PAGINA);
+
+  function handleEnviarRecordatorios() {
+    const { enviados, residentes } = enviarRecordatorios();
+
+    setMensajeRecordatorios(
+      enviados === 0
+        ? "No hay recordatorios nuevos: todos los residentes con cuotas por vencer o vencidas ya tienen su aviso sin leer."
+        : `Se enviaron ${enviados} recordatorio(s) a ${residentes} residente(s).`
+    );
   }
 
   return {
-    propiedades,
-    cuotas,
-    idPropiedad, setIdPropiedad,
-    valor, setValor,
-    descripcion, setDescripcion,
-    fechaLimite, setFechaLimite,
-    errores,
-    guardando,
-    handleSubmit,
+    visibles,
+    totalFiltradas: filtradas.length,
+    paginaActual,
+    totalPaginas,
+    setPagina,
+    busqueda, cambiarBusqueda,
+    filtroEstado, cambiarEstado,
+    filtroPeriodo, cambiarPeriodo,
+    periodos,
+    resumen,
+    etiquetaPeriodo,
+    mensajeRecordatorios,
+    handleEnviarRecordatorios,
   };
 }

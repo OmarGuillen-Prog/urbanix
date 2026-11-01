@@ -11,6 +11,8 @@ interface Credencial extends UsuarioSesion {
 let credenciales: Credencial[] = [
   { correo: "omar@urbanix.com", contrasena: "12345678", nombres: "Omar", apellidos: "Guillén", rol: "administrador" },
   { correo: "juan@urbanix.com", contrasena: "12345678", nombres: "Juan Manuel", apellidos: "Ciro", rol: "residente" },
+  { correo: "maria@urbanix.com", contrasena: "12345678", nombres: "María", apellidos: "López", rol: "residente" },
+  { correo: "laura@urbanix.com", contrasena: "12345678", nombres: "Laura", apellidos: "Gómez", rol: "residente" },
   { correo: "andres@urbanix.com", contrasena: "12345678", nombres: "Andrés", apellidos: "Vélez", rol: "portero" },
 ];
 

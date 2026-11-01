@@ -1,4 +1,8 @@
 import { fechaEnMeses } from "./fechas";
+import { notificarARol, notificarUsuario } from "./notificacionesStore";
+import { obtenerPropiedades } from "./propiedadesStore";
+import { obtenerUsuarios } from "./usuariosStore";
+import { formatearMoneda } from "./formatos";
 // Refleja "Cuota" del MER: valor, fecha_generacion, fecha_limite,
 // estado_pago, descripcion, id_propiedad (FK). Solo guardamos
 // "pendiente" o "pagada" - "vencida" se CALCULA, no se guarda (ver
@@ -53,6 +57,7 @@ export function obtenerCuotasPorPropiedad(idPropiedad: string): Cuota[] {
 
 // RF-27, RF-28, RF-29: registrar cuota, asociada a una propiedad, con
 // fecha limite.
+// RF-27, RF-28, RF-29: registrar cuota, asociada a una propiedad, con fecha limite.
 export function crearCuota(datos: {
   idPropiedad: string;
   valor: number;
@@ -64,10 +69,44 @@ export function crearCuota(datos: {
     ...cuotas,
     { id: nuevoId, ...datos, fechaGeneracion: new Date().toISOString(), estadoPago: "pendiente" },
   ];
+
+  // Avisar a quienes responden por la propiedad: propietario y arrendatario
+  const propiedad = obtenerPropiedades().find((p) => p.id === datos.idPropiedad);
+  if (!propiedad) return;
+
+  // Set: si el propietario y el arrendatario son la misma persona, se avisa UNA vez
+  const idsDestino = new Set(
+    [propiedad.idPropietario, propiedad.idArrendatario].filter((id): id is string => id !== null)
+  );
+  const vence = new Date(`${datos.fechaLimite}T00:00:00`).toLocaleDateString("es-CO", { day: "numeric", month: "short" });
+
+  for (const usuario of obtenerUsuarios().filter((u) => idsDestino.has(u.id))) {
+    notificarUsuario(usuario.correo, {
+      tipo: "info",
+      titulo: "Nueva cuota de administración",
+      mensaje: `${datos.descripcion}: ${formatearMoneda(datos.valor)}, vence el ${vence}`,
+      enlace: "/panel/cuotas",
+    });
+  }
 }
 
 export function marcarComoPagada(id: string): void {
+  const cuota = cuotas.find((c) => c.id === id);
+  if (!cuota || cuota.estadoPago === "pagada") return; // ya estaba pagada: no se avisa dos veces
+
   cuotas = cuotas.map((c) => (c.id === id ? { ...c, estadoPago: "pagada" } : c));
+
+  // Avisar a los administradores que llego un pago.
+  // La cuota solo trae el id de la propiedad: buscamos la propiedad para mostrar su unidad.
+  const propiedad = obtenerPropiedades().find((p) => p.id === cuota.idPropiedad);
+  const unidad = propiedad ? `${propiedad.torre}-${propiedad.numero}` : "desconocida";
+
+  notificarARol("administrador", {
+    tipo: "exito",
+    titulo: "Cuota recibida",
+    mensaje: `Cuota de ${formatearMoneda(cuota.valor)} recibida de la unidad ${unidad}`,
+    enlace: "/panel/cuotas",
+  });
 }
 
 // El "estado calculado" del que hablamos: si ya esta pagada, listo.

@@ -1,3 +1,5 @@
+import { notificarARol } from "./notificacionesStore";
+
 // Refleja "Comunicado" del MER: titulo, contenido, fecha_publicacion,
 // estado, id_administrador (FK).
 export interface Comunicado {
@@ -44,6 +46,14 @@ export function crearComunicado(datos: { titulo: string; contenido: string; corr
     ...comunicados,
     { id: nuevoId, ...datos, fechaPublicacion: new Date().toISOString() },
   ];
+
+  // RF-35: al publicar, se notifica a los residentes
+  notificarARol("residente", {
+    tipo: "info",
+    titulo: "Nuevo comunicado",
+    mensaje: datos.titulo,
+    enlace: "/panel/comunicados",
+  });
 }
 
 export function actualizarComunicado(id: string, cambios: { titulo: string; contenido: string }): void {

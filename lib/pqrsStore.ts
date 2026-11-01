@@ -1,4 +1,5 @@
 import { obtenerUsuarios, type Usuario } from "./usuariosStore";
+import { notificarARol, notificarUsuario } from "./notificacionesStore";
 
 // Estos dos ayudantes ahora viven en personasHelpers (los usa tambien Reservas).
 // Los re-exportamos con el nombre anterior para no tocar los archivos de PQRS.
@@ -68,6 +69,14 @@ export function crearPQRS(datos: {
       correoAsignado: null,
     },
   ];
+
+  // Avisar a los administradores que llego una PQRS nueva
+  notificarARol("administrador", {
+    tipo: "alerta",
+    titulo: "Nueva PQRS",
+    mensaje: `${codigoTicket(nuevoId)}: ${datos.asunto}`,
+    enlace: `/panel/pqrs/${nuevoId}`,
+  });
 }
 
 // El administrador gestiona la solicitud: estado, prioridad, a quien

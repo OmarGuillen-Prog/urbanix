@@ -85,6 +85,7 @@ export function useReservaFormulario(reservaId?: string) {
             // Se confirma sola: el store ya rechaza choques de horario y exceso
             // de capacidad, asi que si llega hasta aqui, hay disponibilidad.
             estado: "confirmada",
+            creadaPor: usuario.correo, // <- quien esta usando el formulario
           });
 
     // El store aplica capacidad y choque de horario, y nos dice si fallo

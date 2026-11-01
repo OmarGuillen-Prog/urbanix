@@ -1,3 +1,4 @@
+import { notificarARol, notificarUsuario } from "./notificacionesStore";
 // Store del modulo de REPORTES DE DAÑOS (no confundir con estadisticasStore.ts)
 import { fechaHoraEnDias } from "./fechas";
 
@@ -65,6 +66,7 @@ export function codigoReporte(id: string): string {
 }
 
 // La prioridad la define la administracion: todo reporte nuevo nace "media"
+// La prioridad la define la administracion: todo reporte nuevo nace "media"
 export function crearReporte(datos: {
   titulo: string;
   descripcion: string;
@@ -85,13 +87,34 @@ export function crearReporte(datos: {
       comentarioAdmin: null,
     },
   ];
+
+  // Avisar a los administradores (menos a quien reporto, si es administrador)
+  notificarARol(
+    "administrador",
+    {
+      tipo: "alerta",
+      titulo: "Nuevo reporte de daño",
+      mensaje: `${codigoReporte(nuevoId)}: ${datos.titulo}`,
+      enlace: `/panel/reportes/${nuevoId}`,
+    },
+    datos.correoCreador
+  );
 }
+
+// Como se nombra cada estado dentro de una frase ("ahora esta ...")
+const TEXTO_ESTADO: Record<EstadoReporte, string> = {
+  pendiente: "pendiente",
+  en_evaluacion: "en evaluación",
+  en_proceso: "en reparación",
+  resuelto: "resuelto",
+};
 
 // RF-53: el administrador gestiona el reporte (estado, prioridad y comentario)
 export function actualizarReporte(
   id: string,
   cambios: { estado: EstadoReporte; prioridad: PrioridadReporte; comentarioAdmin: string }
 ): void {
+  const anterior = reportes.find((r) => r.id === id);
   const comentario = cambios.comentarioAdmin.trim();
 
   reportes = reportes.map((r) =>
@@ -105,4 +128,18 @@ export function actualizarReporte(
         }
       : r
   );
+
+  // Si el estado cambio, avisarle a quien hizo el reporte
+  if (anterior && cambios.estado !== anterior.estado) {
+    const resuelto = cambios.estado === "resuelto";
+
+    notificarUsuario(anterior.correoCreador, {
+      tipo: resuelto ? "exito" : "info",
+      titulo: resuelto ? "Reparación completada" : "Tu reporte cambió de estado",
+      mensaje: resuelto
+        ? `${codigoReporte(id)}: ${anterior.titulo} fue resuelto.`
+        : `${codigoReporte(id)} ahora está ${TEXTO_ESTADO[cambios.estado]}.`,
+      enlace: `/panel/reportes/${id}`,
+    });
+  }
 }

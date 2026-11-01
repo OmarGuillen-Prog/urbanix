@@ -1,3 +1,5 @@
+import { notificarARol, notificarUsuario } from "./notificacionesStore";
+import { nombrePorCorreo } from "./personasHelpers";
 // ---------- Zonas comunes (sin cambios) ----------
 import { fechaEnDias } from "./fechas";
 export { hoyLocal } from "./fechas";
@@ -115,13 +117,47 @@ function validarReserva(datos: DatosReserva, idExcluir?: string): string | null 
 }
 
 export function crearReserva(
-  datos: DatosReserva & { correoResidente: string; estado: "pendiente" | "confirmada" }
+  datos: DatosReserva & {
+    correoResidente: string;
+    estado: "pendiente" | "confirmada";
+    creadaPor?: string; // quien ejecuto la accion (puede ser un administrador reservando por un residente)
+  }
 ): { exito: boolean; mensaje?: string } {
-  const error = validarReserva(datos);
+  // Separamos "creadaPor": sirve para avisar, pero NO se guarda dentro de la reserva
+  const { creadaPor, ...datosReserva } = datos;
+
+  const error = validarReserva(datosReserva);
   if (error) return { exito: false, mensaje: error };
 
   const nuevoId = (Math.max(0, ...reservas.map((r) => Number(r.id))) + 1).toString();
-  reservas = [...reservas, { id: nuevoId, ...datos }];
+  reservas = [...reservas, { id: nuevoId, ...datosReserva }];
+
+  // Avisos. El "actor" es quien hizo la accion; si no se indica, es el propio residente.
+  const actor = creadaPor ?? datos.correoResidente;
+  const detalle = `${nombreDeZona(datos.idZona)}, ${datos.fecha} (${datos.horaInicio} - ${datos.horaFin})`;
+
+  // Los administradores se enteran (menos el que hizo la reserva, si fue uno de ellos)
+  notificarARol(
+    "administrador",
+    {
+      tipo: "info",
+      titulo: "Nueva reservación",
+      mensaje: `${nombrePorCorreo(datos.correoResidente)} reservó ${detalle}`,
+      enlace: `/panel/reservas/${nuevoId}`,
+    },
+    actor
+  );
+
+  // Si la hizo OTRA persona (el administrador), el residente dueño tambien debe enterarse
+  if (actor !== datos.correoResidente) {
+    notificarUsuario(datos.correoResidente, {
+      tipo: "exito",
+      titulo: "Reserva confirmada",
+      mensaje: detalle,
+      enlace: `/panel/reservas/${nuevoId}`,
+    });
+  }
+
   return { exito: true };
 }
 
@@ -141,6 +177,35 @@ export function confirmarReserva(id: string): void {
 }
 
 // RF-59: cancelar libera el horario (no borramos: queda en el historial)
-export function cancelarReserva(id: string): void {
+// RF-59: cancelar libera el horario (no borramos: queda en el historial)
+export function cancelarReserva(id: string, canceladaPor?: string): void {
+  const reserva = reservas.find((r) => r.id === id);
+  if (!reserva || reserva.estado === "cancelada") return; // nada que cancelar: no se avisa dos veces
+
   reservas = reservas.map((r) => (r.id === id ? { ...r, estado: "cancelada" } : r));
+
+  const detalle = `${nombreDeZona(reserva.idZona)}, ${reserva.fecha} (${reserva.horaInicio} - ${reserva.horaFin})`;
+  const canceloElDueno = canceladaPor === undefined || canceladaPor === reserva.correoResidente;
+
+  if (canceloElDueno) {
+    // El residente cancelo: avisar a los administradores
+    notificarARol(
+      "administrador",
+      {
+        tipo: "info",
+        titulo: "Reserva cancelada",
+        mensaje: `${nombrePorCorreo(reserva.correoResidente)} canceló ${detalle}`,
+        enlace: "/panel/reservas",
+      },
+      canceladaPor
+    );
+  } else {
+    // Otra persona (el administrador) la cancelo: avisar al residente
+    notificarUsuario(reserva.correoResidente, {
+      tipo: "alerta",
+      titulo: "Tu reserva fue cancelada",
+      mensaje: detalle,
+      enlace: `/panel/reservas/${id}`,
+    });
+  }
 }

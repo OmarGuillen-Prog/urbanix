@@ -25,6 +25,7 @@ const ITEMS_MENU: ItemMenu[] = [
   { label: "Reportes", href: "/panel/estadisticas", disponible: true, roles: ["administrador"] },
   { label: "Reportes de daños", href: "/panel/reportes", disponible: true, roles: ["administrador", "residente"] },
   { label: "Comunicados", href: "/panel/comunicados", disponible: true, roles: ["administrador", "residente", "portero"] },
+  { label: "Notificaciones", href: "/panel/notificaciones", disponible: true, roles: ["administrador", "residente", "portero"] },
   { label: "Cuotas", href: "/panel/cuotas", disponible: true, roles: ["administrador", "residente"] },
   { label: "Nóminas", href: "/panel/nominas", disponible: true, roles: ["administrador"] },
   { label: "Configuración", href: "/panel/configuracion", disponible: false, roles: ["administrador", "residente", "portero"] },

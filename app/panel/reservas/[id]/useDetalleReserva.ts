@@ -27,7 +27,7 @@ export function useDetalleReserva(id: string) {
     );
     if (!confirmado) return;
 
-    cancelarReserva(reserva.id);
+    cancelarReserva(reserva.id, usuario?.correo);
     setReserva(obtenerReservaPorId(id));
   }
 

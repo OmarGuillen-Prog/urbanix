@@ -1,4 +1,5 @@
 import { fechaEnDias, fechaHoraEnDias } from "./fechas";
+import { notificarUsuario } from "./notificacionesStore";
 
 export type TipoVisita = "visitante" | "domicilio" | "servicio";
 // Valores internos sin cambio; en pantalla se ven como Esperado / Ingresó / Completado
@@ -67,10 +68,23 @@ export function crearVisita(datos: {
 }
 
 // RF-47: el portero registra la entrada
+// RF-47: el portero registra la entrada
 export function registrarEntrada(id: string, correoPortero: string): void {
+  const visita = visitas.find((v) => v.id === id);
+
   visitas = visitas.map((v) =>
     v.id === id ? { ...v, estado: "en_conjunto", horaEntrada: new Date().toISOString(), correoPortero } : v
   );
+
+  // RF-49 / HU-31: avisarle al anfitrion que su visita llego
+  if (visita) {
+    notificarUsuario(visita.correoResidente, {
+      tipo: "info",
+      titulo: "Tu visita llegó",
+      mensaje: `${visita.nombreVisitante} ingresó al conjunto.`,
+      enlace: "/panel/visitas",
+    });
+  }
 }
 
 // RF-48: el portero registra la salida

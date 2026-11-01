@@ -3,10 +3,18 @@
 import Link from "next/link";
 import { useReportarDano } from "./useReportarDano";
 import { FormInput } from "@/components/FormInput";
+import { MAX_EVIDENCIAS, MAX_MB_POR_EVIDENCIA } from "@/lib/reportesStore";
 
 export default function NuevoReportePage() {
-  const { titulo, setTitulo, descripcion, setDescripcion, preview, handleArchivoChange, errores, guardando, handleSubmit } =
-    useReportarDano();
+  const {
+    titulo, setTitulo,
+    ubicacion, setUbicacion,
+    descripcion, setDescripcion,
+    evidencias,
+    handleArchivosChange,
+    quitarEvidencia,
+    errores, guardando, handleSubmit,
+  } = useReportarDano();
 
   return (
     <div>
@@ -14,18 +22,28 @@ export default function NuevoReportePage() {
         ← Volver al listado
       </Link>
 
-      <h1 className="mt-4 font-display text-3xl font-semibold text-ink">
-        Reportar daño
-      </h1>
+      <h1 className="mt-4 font-display text-3xl font-semibold text-ink">Nuevo reporte de daño</h1>
+      <p className="mt-1 text-ink/60">
+        Cuéntanos qué pasó y dónde. La administración definirá la prioridad y te mantendrá al tanto de la reparación.
+      </p>
 
       <form onSubmit={handleSubmit} className="mt-8 flex max-w-lg flex-col gap-5">
         <FormInput
           id="titulo"
           label="Título"
-          placeholder="Ej: Grieta en el muro del parqueadero"
+          placeholder="Ej: Filtración de agua en el techo"
           value={titulo}
           onChange={setTitulo}
           error={errores.titulo}
+        />
+
+        <FormInput
+          id="ubicacion"
+          label="Ubicación"
+          placeholder="Ej: Parqueadero Nivel 1, zona sur"
+          value={ubicacion}
+          onChange={setUbicacion}
+          error={errores.ubicacion}
         />
 
         <div>
@@ -43,31 +61,45 @@ export default function NuevoReportePage() {
           {errores.descripcion && <p className="mt-1.5 text-sm text-error">{errores.descripcion}</p>}
         </div>
 
-        {/* HU-50: subir foto como evidencia (opcional) */}
+        {/* HU-50: evidencias (opcionales, varias) */}
         <div>
-          <label htmlFor="evidenciaFoto" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
-            Foto de evidencia (opcional)
+          <label htmlFor="evidencias" className="mb-1.5 block text-xs font-medium uppercase tracking-wide text-ink/60">
+            Evidencias (opcional)
           </label>
           <input
-            id="evidenciaFoto"
+            id="evidencias"
             type="file"
-            // "accept" filtra que tipos de archivo el navegador ofrece
-            // en el selector - no es una validacion de seguridad real,
-            // solo una ayuda de UX, algo bueno saber a futuro.
             accept="image/*"
-            onChange={handleArchivoChange}
+            multiple
+            onChange={handleArchivosChange}
             className="w-full rounded-lg border border-line bg-white px-3.5 py-2.5 text-sm text-ink file:mr-3 file:rounded-md file:border-0 file:bg-brand/10 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-brand"
           />
-          {errores.evidenciaFoto && <p className="mt-1.5 text-sm text-error">{errores.evidenciaFoto}</p>}
+          <p className="mt-1.5 text-xs text-ink/50">
+            Hasta {MAX_EVIDENCIAS} imágenes de máximo {MAX_MB_POR_EVIDENCIA} MB cada una ({evidencias.length}/{MAX_EVIDENCIAS}).
+          </p>
+          {errores.evidencias && <p className="mt-1.5 text-sm text-error">{errores.evidencias}</p>}
 
-          {/* Vista previa: solo se muestra si ya se cargo una imagen */}
-          {preview && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={preview}
-              alt="Vista previa de la evidencia"
-              className="mt-3 max-h-48 rounded-lg border border-line object-cover"
-            />
+          {evidencias.length > 0 && (
+            <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {evidencias.map((imagen, indice) => (
+                <li key={indice} className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imagen}
+                    alt={`Evidencia ${indice + 1}`}
+                    className="h-24 w-full rounded-lg border border-line object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => quitarEvidencia(indice)}
+                    aria-label={`Quitar evidencia ${indice + 1}`}
+                    className="absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full bg-white/90 text-xs text-error shadow transition-colors hover:bg-white"
+                  >
+                    ✕
+                  </button>
+                </li>
+              ))}
+            </ul>
           )}
         </div>
 

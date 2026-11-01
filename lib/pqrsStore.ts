@@ -79,6 +79,13 @@ export function crearPQRS(datos: {
   });
 }
 
+// Como se nombra cada estado dentro de una frase ("ahora esta ...")
+const TEXTO_ESTADO: Record<EstadoPQRS, string> = {
+  pendiente: "pendiente",
+  en_proceso: "en proceso",
+  resuelto: "resuelta",
+};
+
 // El administrador gestiona la solicitud: estado, prioridad, a quien
 // se asigna y la respuesta (HU-25).
 export function actualizarPQRS(
@@ -90,6 +97,8 @@ export function actualizarPQRS(
     respuesta: string;
   }
 ): void {
+  const anterior = listaPQRS.find((p) => p.id === id);
+
   listaPQRS = listaPQRS.map((p) => {
     if (p.id !== id) return p;
 
@@ -105,6 +114,27 @@ export function actualizarPQRS(
       fechaRespuesta: !hayRespuesta ? null : respuestaNueva ? new Date().toISOString() : p.fechaRespuesta,
     };
   });
+
+  if (!anterior) return;
+
+  // Avisarle al residente: primero si hay respuesta nueva; si no, si cambio el estado
+  const hayRespuestaNueva = cambios.respuesta.trim() !== "" && cambios.respuesta !== anterior.respuesta;
+
+  if (hayRespuestaNueva) {
+    notificarUsuario(anterior.correoCreador, {
+      tipo: "exito",
+      titulo: "Tu PQRS fue respondida",
+      mensaje: `${codigoTicket(id)}: ${anterior.asunto}`,
+      enlace: `/panel/pqrs/${id}`,
+    });
+  } else if (cambios.estado !== anterior.estado) {
+    notificarUsuario(anterior.correoCreador, {
+      tipo: "info",
+      titulo: "Tu PQRS cambió de estado",
+      mensaje: `${codigoTicket(id)} ahora está ${TEXTO_ESTADO[cambios.estado]}.`,
+      enlace: `/panel/pqrs/${id}`,
+    });
+  }
 }
 
 // --- Ayudantes de presentacion (los "JOIN manuales" de siempre) ---

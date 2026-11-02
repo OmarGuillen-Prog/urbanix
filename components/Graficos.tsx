@@ -130,3 +130,31 @@ export function GraficoLinea({ datos, claveX, claveY, nombre, color = PALETA[0],
     </ResponsiveContainer>
   );
 }
+
+// Varias lineas en un mismo grafico (por ejemplo: reservaciones y visitas por mes)
+export function GraficoLineasMultiples({ datos, claveX, series }: { datos: object[]; claveX: string; series: SerieGrafico[] }) {
+  if (datos.length === 0) return <SinDatos />;
+
+  return (
+    <ResponsiveContainer width="100%" height={260}>
+      <LineChart data={datos} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+        <CartesianGrid stroke={COLOR_REJILLA} strokeDasharray="3 3" vertical={false} />
+        <XAxis dataKey={claveX} stroke={COLOR_EJES} fontSize={12} tickLine={false} />
+        <YAxis stroke={COLOR_EJES} fontSize={12} tickLine={false} axisLine={false} allowDecimals={false} />
+        <Tooltip />
+        <Legend />
+        {series.map((serie) => (
+          <Line
+            key={serie.clave}
+            type="monotone"
+            dataKey={serie.clave}
+            name={serie.nombre}
+            stroke={serie.color}
+            strokeWidth={2}
+            dot={{ r: 3 }}
+          />
+        ))}
+      </LineChart>
+    </ResponsiveContainer>
+  );
+}

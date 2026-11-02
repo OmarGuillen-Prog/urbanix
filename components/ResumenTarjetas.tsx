@@ -9,13 +9,26 @@ export interface Tendencia {
   bueno: boolean; // true = verde, false = rojo (que SUBA un gasto es "malo")
 }
 
+// Texto de apoyo bajo el valor, sin flecha (ej: "8 de alta prioridad")
+export interface Detalle {
+  texto: string;
+  tono: "neutro" | "bueno" | "malo";
+}
+
 export interface ItemResumen {
   etiqueta: string;
   valor: number | string;
   icono: string;
   tono: Tono;
   tendencia?: Tendencia;
+  detalle?: Detalle;
 }
+
+const ESTILOS_DETALLE: Record<Detalle["tono"], string> = {
+  neutro: "text-ink/50",
+  bueno: "text-emerald-600",
+  malo: "text-error",
+};
 
 const ESTILOS_TONO: Record<Tono, { fondoIcono: string; textoValor: string }> = {
   brand: { fondoIcono: "bg-brand/10", textoValor: "text-brand" },
@@ -52,6 +65,9 @@ export function ResumenTarjetas({ items }: { items: ItemResumen[] }) {
               >
                 {FLECHAS[item.tendencia.direccion]} {item.tendencia.texto}
               </p>
+            )}
+            {item.detalle && (
+              <p className={`mt-0.5 text-xs font-medium ${ESTILOS_DETALLE[item.detalle.tono]}`}>{item.detalle.texto}</p>
             )}
           </div>
         </div>

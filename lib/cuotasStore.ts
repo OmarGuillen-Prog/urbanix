@@ -4,6 +4,17 @@ import { obtenerPropiedades } from "./propiedadesStore";
 import { obtenerUsuarios, type Usuario } from "./usuariosStore";
 import { formatearMoneda } from "./formatos";
 
+// El comprobante de pago que sube el residente: una imagen que el administrador revisa
+export type EstadoComprobante = "en_revision" | "aprobado" | "rechazado";
+
+export interface Comprobante {
+  imagen: string; // la imagen como data URL (en una version con backend seria el enlace a un archivo)
+  fechaSubida: string; // ISO
+  subidoPor: string; // correo del residente
+  estado: EstadoComprobante;
+  motivoRechazo: string | null;
+}
+
 // Refleja "Cuota" del MER: valor, fecha_generacion, fecha_limite, estado_pago,
 // descripcion, id_propiedad (FK). Solo guardamos "pendiente" o "pagada":
 // "vencida" se CALCULA comparando la fecha limite con hoy (ver estadoVisual).
@@ -15,6 +26,8 @@ export interface Cuota {
   fechaGeneracion: string; // ISO
   fechaLimite: string; // "YYYY-MM-DD"
   fechaPago: string | null; // "YYYY-MM-DD"; null mientras no se pague
+  notaPago: string | null; // referencia que anota el administrador al registrar el pago
+  comprobante: Comprobante | null; // lo sube el residente; null si no ha enviado ninguno
   estadoPago: "pendiente" | "pagada";
 }
 
@@ -45,6 +58,8 @@ function generarCuotas(): Cuota[] {
         fechaLimite: fechaEnMeses(mesesAtras, 10),
         // Las pagadas se pagaron el dia 8 de su mes (o hoy, si es el mes actual)
         fechaPago: sinPagar ? null : mesesAtras === 0 ? hoyLocal() : fechaEnMeses(mesesAtras, 8),
+        notaPago: null,
+        comprobante: null,
         estadoPago: sinPagar ? "pendiente" : "pagada",
       });
     }
@@ -61,6 +76,15 @@ export function obtenerTodasLasCuotas(): Cuota[] {
 
 export function obtenerCuotasPorPropiedad(idPropiedad: string): Cuota[] {
   return cuotas.filter((c) => c.idPropiedad === idPropiedad);
+}
+
+export function obtenerCuotaPorId(id: string): Cuota | undefined {
+  return cuotas.find((c) => c.id === id);
+}
+
+// Cuantos comprobantes esperan la revision del administrador
+export function contarComprobantesPorRevisar(): number {
+  return cuotas.filter((c) => c.comprobante?.estado === "en_revision").length;
 }
 
 // "1" -> "CUO-0001"
@@ -171,7 +195,7 @@ export function crearCuota(datos: {
   const nuevoId = (Math.max(0, ...cuotas.map((c) => Number(c.id))) + 1).toString();
   cuotas = [
     ...cuotas,
-    { id: nuevoId, ...datos, fechaGeneracion: new Date().toISOString(), fechaPago: null, estadoPago: "pendiente" },
+    { id: nuevoId, ...datos, fechaGeneracion: new Date().toISOString(), fechaPago: null, notaPago: null, comprobante: null, estadoPago: "pendiente" },
   ];
 
   for (const usuario of destinatariosDePropiedad(datos.idPropiedad)) {
@@ -184,21 +208,106 @@ export function crearCuota(datos: {
   }
 }
 
-export function marcarComoPagada(id: string): void {
+// "2026-11-02T13:00:00.000Z" -> "2026-11-02" (en horario local)
+function fechaLocalDeIso(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-CA");
+}
+
+// La plataforma NO procesa pagos (el documento lo deja fuera de alcance). Quien registra el pago es
+// el ADMINISTRADOR, cuando el residente pago por fuera: consignacion, transferencia o efectivo.
+export function registrarPagoCuota(id: string, fechaPago: string, notaPago: string): { exito: boolean; mensaje?: string } {
   const cuota = cuotas.find((c) => c.id === id);
-  if (!cuota || cuota.estadoPago === "pagada") return; // ya estaba pagada: no se avisa dos veces
+  if (!cuota) return { exito: false, mensaje: "La cuota no existe." };
+  if (cuota.estadoPago === "pagada") return { exito: false, mensaje: "Esta cuota ya tiene un pago registrado." };
 
-  cuotas = cuotas.map((c) => (c.id === id ? { ...c, estadoPago: "pagada", fechaPago: hoyLocal() } : c));
+  if (fechaPago === "") return { exito: false, mensaje: "La fecha de pago es obligatoria." };
+  if (fechaPago > hoyLocal()) return { exito: false, mensaje: "La fecha de pago no puede ser futura." };
+  if (fechaPago < fechaLocalDeIso(cuota.fechaGeneracion)) {
+    return { exito: false, mensaje: "El pago no puede ser anterior a la fecha en que se generó la cuota." };
+  }
 
-  // Avisar a los administradores que llego un pago
+  const nota = notaPago.trim();
+  cuotas = cuotas.map((c) => {
+    if (c.id !== id) return c;
+
+    // Si habia un comprobante esperando revision, al registrar el pago queda aprobado
+    const comprobante: Comprobante | null =
+      c.comprobante?.estado === "en_revision" ? { ...c.comprobante, estado: "aprobado" } : c.comprobante;
+
+    return { ...c, estadoPago: "pagada", fechaPago, notaPago: nota === "" ? null : nota, comprobante };
+  });
+
+  // Avisar a quienes responden por la propiedad (el administrador ya sabe: es quien lo registro)
+  for (const usuario of destinatariosDePropiedad(cuota.idPropiedad)) {
+    notificarUsuario(usuario.correo, {
+      tipo: "exito",
+      titulo: "Pago registrado",
+      mensaje: `${cuota.descripcion}: ${formatearMoneda(cuota.valor)}, pago registrado el ${fechaCorta(fechaPago)}`,
+      enlace: "/panel/cuotas",
+    });
+  }
+
+  return { exito: true };
+}
+
+// El RESIDENTE (propietario o arrendatario de la propiedad) sube la imagen de su comprobante.
+// No paga nada: solo le muestra a la administracion que ya pago, para que ella registre el pago.
+export function subirComprobante(id: string, correo: string, imagen: string): { exito: boolean; mensaje?: string } {
+  const cuota = cuotas.find((c) => c.id === id);
+  if (!cuota) return { exito: false, mensaje: "La cuota no existe." };
+  if (cuota.estadoPago === "pagada") return { exito: false, mensaje: "Esta cuota ya está pagada." };
+
+  // Solo quienes responden por la propiedad pueden enviar comprobantes de esa cuota
+  const puede = destinatariosDePropiedad(cuota.idPropiedad).some((u) => u.correo === correo);
+  if (!puede) return { exito: false, mensaje: "No puedes enviar comprobantes de esta cuota." };
+
+  if (cuota.comprobante?.estado === "en_revision") {
+    return { exito: false, mensaje: "Ya enviaste un comprobante y está en revisión." };
+  }
+  if (imagen === "") return { exito: false, mensaje: "Selecciona una imagen." };
+
+  cuotas = cuotas.map((c) =>
+    c.id === id
+      ? { ...c, comprobante: { imagen, fechaSubida: new Date().toISOString(), subidoPor: correo, estado: "en_revision", motivoRechazo: null } }
+      : c
+  );
+
+  // Avisar a los administradores que hay un comprobante por revisar
   const { unidad } = detalleDeCuota(cuota);
-
   notificarARol("administrador", {
-    tipo: "exito",
-    titulo: "Cuota recibida",
-    mensaje: `Cuota de ${formatearMoneda(cuota.valor)} recibida de la unidad ${unidad}`,
+    tipo: "info",
+    titulo: "Comprobante de pago recibido",
+    mensaje: `Unidad ${unidad}: ${cuota.descripcion} (${formatearMoneda(cuota.valor)})`,
+    enlace: `/panel/cuotas/${id}`,
+  });
+
+  return { exito: true };
+}
+
+// El ADMINISTRADOR rechaza un comprobante (borroso, de otro valor, etc.) y le explica el motivo al residente
+export function rechazarComprobante(id: string, motivo: string): { exito: boolean; mensaje?: string } {
+  const cuota = cuotas.find((c) => c.id === id);
+  if (!cuota || cuota.comprobante?.estado !== "en_revision") {
+    return { exito: false, mensaje: "No hay un comprobante en revisión para esta cuota." };
+  }
+  if (motivo.trim() === "") return { exito: false, mensaje: "Escribe el motivo del rechazo." };
+
+  const motivoLimpio = motivo.trim();
+  const subidoPor = cuota.comprobante.subidoPor;
+
+  cuotas = cuotas.map((c) =>
+    c.id === id && c.comprobante ? { ...c, comprobante: { ...c.comprobante, estado: "rechazado", motivoRechazo: motivoLimpio } } : c
+  );
+
+  // Avisar a quien lo envio: tiene que subir uno nuevo
+  notificarUsuario(subidoPor, {
+    tipo: "alerta",
+    titulo: "Comprobante rechazado",
+    mensaje: `${cuota.descripcion}: ${motivoLimpio}`,
     enlace: "/panel/cuotas",
   });
+
+  return { exito: true };
 }
 
 // RF-32 / RF-33: recordatorios de pago. Aqui los dispara el administrador con un boton;
@@ -212,6 +321,7 @@ export function enviarRecordatorios(): { enviados: number; residentes: number } 
   for (const cuota of cuotas) {
     const estado = estadoVisual(cuota);
     if (estado === "pagada") continue; // nada que recordar
+    if (cuota.comprobante?.estado === "en_revision") continue; // ya envio su comprobante: espera la revision
     if (estado === "pendiente" && diasParaVencer(cuota.fechaLimite) > DIAS_ANTES_PARA_RECORDAR) continue; // aun falta mucho
 
     const datos: DatosNotificacion =

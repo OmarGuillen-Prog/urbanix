@@ -42,7 +42,7 @@ const FLECHAS = { sube: "▲", baja: "▼", igual: "–" };
 
 export function ResumenTarjetas({ items }: { items: ItemResumen[] }) {
   return (
-    <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
       {items.map((item) => (
         <div key={item.etiqueta} className="flex items-center gap-4 rounded-xl border border-line bg-white p-5">
           <div

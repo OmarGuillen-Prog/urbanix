@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "./Sidebar";
@@ -11,18 +11,16 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const { usuario, cargando } = useAuth();
   const router = useRouter();
 
-  // Efecto legitimo: navegar es "sincronizar con un sistema externo"
-  // (el enrutador del navegador), no un simple calculo - por eso
-  // useEffect es correcto aqui, a diferencia del caso de HU-03.
+  // En pantallas pequenas el menu lateral se despliega encima del contenido; este estado dice si esta abierto.
+  // Vive aqui (en el layout) porque lo comparten DOS componentes: el boton del Topbar y el propio Sidebar.
+  const [menuAbierto, setMenuAbierto] = useState(false);
+
   useEffect(() => {
     if (!cargando && !usuario) {
       router.push("/login");
     }
   }, [cargando, usuario, router]);
 
-  // Mientras se resuelve si hay sesion (o mientras redirige a alguien
-  // sin sesion), mostramos un estado de carga simple en vez de un
-  // panel vacio o con datos de "undefined" parpadeando.
   if (cargando || !usuario) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-canvas font-sans text-ink/60">
@@ -34,10 +32,12 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex h-screen overflow-hidden bg-canvas font-sans text-ink">
       <VigilanteInactividad />
-      <Sidebar />
-      <div className="flex flex-1 flex-col">
-        <Topbar />
-        <main className="flex-1 overflow-y-auto p-8">{children}</main>
+      <Sidebar abierto={menuAbierto} onCerrar={() => setMenuAbierto(false)} />
+
+      {/* min-w-0: sin esto, una tabla ancha estira esta columna mas alla de la pantalla en vez de hacer scroll dentro de su caja */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Topbar onAbrirMenu={() => setMenuAbierto(true)} />
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
     </div>
   );

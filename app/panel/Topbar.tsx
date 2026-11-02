@@ -7,7 +7,7 @@ import { useVersionNotificaciones } from "@/lib/useNotificaciones";
 import { contarSinLeer } from "@/lib/notificacionesStore";
 import { obtenerUsuarioPorCorreo } from "@/lib/usuariosStore";
 
-export function Topbar() {
+export function Topbar({ onAbrirMenu }: { onAbrirMenu: () => void }) {
   const { usuario, cerrarSesion } = useAuth();
   const router = useRouter();
 
@@ -27,7 +27,17 @@ export function Topbar() {
   }
 
   return (
-    <header className="flex h-16 items-center justify-end gap-4 border-b border-line bg-white px-8">
+    <header className="flex h-16 items-center justify-end gap-3 border-b border-line bg-white px-4 sm:gap-4 sm:px-8">
+      {/* Boton del menu: solo en pantallas pequenas (en las grandes el menu ya esta a la vista). mr-auto lo manda a la izquierda */}
+      <button
+        type="button"
+        onClick={onAbrirMenu}
+        aria-label="Abrir menú"
+        className="mr-auto flex h-9 w-9 items-center justify-center rounded-lg bg-brand font-display text-lg font-semibold text-white transition-colors hover:bg-brand-dark lg:hidden"
+      >
+        U
+      </button>
+
       <Link
         href="/panel/notificaciones"
         aria-label={sinLeer > 0 ? `Notificaciones, ${sinLeer} sin leer` : "Notificaciones"}
@@ -43,6 +53,7 @@ export function Topbar() {
 
       <Link
         href="/panel/perfil"
+        aria-label="Mi perfil"
         className="flex items-center gap-3 rounded-lg px-2 py-1 transition-colors hover:bg-canvas"
       >
         {foto ? (
@@ -54,12 +65,13 @@ export function Topbar() {
             {inicial}
           </div>
         )}
-        <span className="text-sm font-medium text-ink">{nombreCompleto}</span>
+        {/* En pantallas pequenas solo queda el avatar: el nombre completo no cabe */}
+        <span className="hidden text-sm font-medium text-ink sm:inline">{nombreCompleto}</span>
       </Link>
 
       <button
         onClick={handleCerrarSesion}
-        className="rounded-lg border border-line px-3 py-1.5 text-sm text-ink/60 transition-colors hover:border-error hover:text-error"
+        className="whitespace-nowrap rounded-lg border border-line px-3 py-1.5 text-sm text-ink/60 transition-colors hover:border-error hover:text-error"
       >
         Cerrar sesión
       </button>

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
-import { SessionProvider } from "@/context/SessionContext";
 
 const fraunces = Fraunces({
   subsets: ["latin"],

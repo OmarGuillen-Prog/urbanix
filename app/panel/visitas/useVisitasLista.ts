@@ -12,7 +12,7 @@ import {
   type TipoVisita,
   type EstadoVisita,
 } from "@/lib/visitasStore";
-import { unidadDeUsuario, nombrePorCorreo } from "@/lib/personasHelpers";
+import { unidadDeUsuario } from "@/lib/personasHelpers";
 import { hoyLocal } from "@/lib/fechas";
 
 const TAMANO_PAGINA = 6;

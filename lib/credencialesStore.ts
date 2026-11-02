@@ -26,9 +26,14 @@ export function verificarCredenciales(correo: string, contrasena: string): Promi
         resolve(null);
         return;
       }
-      // Destructuring para "quitar" la contraseña antes de devolver
-      // los datos de sesion - nunca deberia viajar mas alla de aqui.
-      const { contrasena: _sinUsar, ...sesion } = encontrado;
+      // Armamos la sesion con SOLO los datos que necesita: asi la contraseña nunca viaja mas alla de aqui,
+      // ni siquiera si manana agregas otro campo a Credencial.
+      const sesion: UsuarioSesion = {
+        correo: encontrado.correo,
+        nombres: encontrado.nombres,
+        apellidos: encontrado.apellidos,
+        rol: encontrado.rol,
+      };
       resolve(sesion);
     }, 500);
   });

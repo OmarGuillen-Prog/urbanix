@@ -2,6 +2,7 @@
 // (notificarUsuario / notificarARol); esta nunca importa de ellos, asi no hay ciclos.
 import { obtenerUsuarios } from "./usuariosStore";
 import type { Rol } from "@/context/AuthContext";
+import { quiereRecibir } from "./configuracionStore";
 
 export type TipoNotificacion = "alerta" | "info" | "exito";
 
@@ -111,6 +112,9 @@ function crear(correoDestino: string, datos: DatosNotificacion, id: string): Not
 
 // Avisar a UNA persona
 export function notificarUsuario(correoDestino: string, datos: DatosNotificacion): void {
+  // Respeta las preferencias: si la persona apago esa categoria, no se crea el aviso
+  if (!quiereRecibir(correoDestino, datos.enlace)) return;
+
   notificaciones = [...notificaciones, crear(correoDestino, datos, siguienteId())];
   avisarCambio();
 }
@@ -119,7 +123,7 @@ export function notificarUsuario(correoDestino: string, datos: DatosNotificacion
 // "excluirCorreo": quien origino el evento no necesita avisarse a si mismo.
 export function notificarARol(rol: Rol, datos: DatosNotificacion, excluirCorreo?: string): void {
   const destinatarios = obtenerUsuarios().filter(
-    (u) => u.rol === rol && u.estado === "activo" && u.correo !== excluirCorreo
+    (u) => u.rol === rol && u.estado === "activo" && u.correo !== excluirCorreo && quiereRecibir(u.correo, datos.enlace)
   );
   if (destinatarios.length === 0) return;
 
@@ -155,6 +159,7 @@ export function eliminarTodas(correo: string): void {
 // una identica SIN LEER (evita llenar la bandeja si se pulsa "enviar" dos veces).
 // Devuelve true si la creo.
 export function notificarSinDuplicar(correoDestino: string, datos: DatosNotificacion): boolean {
+  if (!quiereRecibir(correoDestino, datos.enlace)) return false;
   const yaExiste = notificaciones.some(
     (n) => n.correoDestino === correoDestino && !n.leida && n.titulo === datos.titulo && n.mensaje === datos.mensaje
   );

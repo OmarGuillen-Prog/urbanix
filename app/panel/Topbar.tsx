@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useVersionNotificaciones } from "@/lib/useNotificaciones";
 import { contarSinLeer } from "@/lib/notificacionesStore";
+import { obtenerUsuarioPorCorreo } from "@/lib/usuariosStore";
 
 export function Topbar() {
   const { usuario, cerrarSesion } = useAuth();
@@ -13,6 +14,9 @@ export function Topbar() {
   // Suscripcion: la campana se actualiza sola cuando cambian las notificaciones
   useVersionNotificaciones();
   const sinLeer = usuario ? contarSinLeer(usuario.correo) : 0;
+
+  // La foto vive en la ficha del usuario; cuando se guarda el perfil, la sesion cambia y este componente se redibuja
+  const foto = usuario ? obtenerUsuarioPorCorreo(usuario.correo)?.foto : undefined;
 
   const inicial = usuario?.nombres?.charAt(0).toUpperCase() ?? "?";
   const nombreCompleto = usuario ? `${usuario.nombres} ${usuario.apellidos}` : "";
@@ -41,9 +45,15 @@ export function Topbar() {
         href="/panel/perfil"
         className="flex items-center gap-3 rounded-lg px-2 py-1 transition-colors hover:bg-canvas"
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-sm font-medium text-white">
-          {inicial}
-        </div>
+        {foto ? (
+          // Es una imagen en memoria (data URL): next/image no aplica, por eso <img>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={foto} alt="" className="h-9 w-9 rounded-full object-cover" />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-sm font-medium text-white">
+            {inicial}
+          </div>
+        )}
         <span className="text-sm font-medium text-ink">{nombreCompleto}</span>
       </Link>
 

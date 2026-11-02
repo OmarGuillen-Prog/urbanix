@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
+import { VigilanteInactividad } from "./VigilanteInactividad";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
   const { usuario, cargando } = useAuth();
@@ -32,6 +33,7 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="flex h-screen overflow-hidden bg-canvas font-sans text-ink">
+      <VigilanteInactividad />
       <Sidebar />
       <div className="flex flex-1 flex-col">
         <Topbar />

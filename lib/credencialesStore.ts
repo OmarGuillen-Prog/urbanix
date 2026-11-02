@@ -51,3 +51,8 @@ export function cambiarContrasena(
   credenciales = credenciales.map((c) => (c.correo === correo ? { ...c, contrasena: nueva } : c));
   return { exito: true };
 }
+
+// Mantiene al dia los nombres con los que se inicia sesion cuando alguien edita su perfil
+export function actualizarNombresCredencial(correo: string, nombres: string, apellidos: string): void {
+  credenciales = credenciales.map((c) => (c.correo === correo ? { ...c, nombres, apellidos } : c));
+}

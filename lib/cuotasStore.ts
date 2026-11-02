@@ -3,6 +3,7 @@ import { notificarARol, notificarUsuario, notificarSinDuplicar, type DatosNotifi
 import { obtenerPropiedades } from "./propiedadesStore";
 import { obtenerUsuarios, type Usuario } from "./usuariosStore";
 import { formatearMoneda } from "./formatos";
+import { obtenerConfigConjunto } from "./configuracionStore";
 
 // El comprobante de pago que sube el residente: una imagen que el administrador revisa
 export type EstadoComprobante = "en_revision" | "aprobado" | "rechazado";
@@ -310,11 +311,9 @@ export function rechazarComprobante(id: string, motivo: string): { exito: boolea
   return { exito: true };
 }
 
-// RF-32 / RF-33: recordatorios de pago. Aqui los dispara el administrador con un boton;
-// con backend serian automaticos (una tarea programada que corre cada dia).
-const DIAS_ANTES_PARA_RECORDAR = 7;
-
 export function enviarRecordatorios(): { enviados: number; residentes: number } {
+  // Cuantos dias antes se recuerda: lo define el administrador en Configuracion > Conjunto
+  const { diasRecordatorio } = obtenerConfigConjunto();
   let enviados = 0;
   const avisados = new Set<string>();
 
@@ -322,7 +321,7 @@ export function enviarRecordatorios(): { enviados: number; residentes: number } 
     const estado = estadoVisual(cuota);
     if (estado === "pagada") continue; // nada que recordar
     if (cuota.comprobante?.estado === "en_revision") continue; // ya envio su comprobante: espera la revision
-    if (estado === "pendiente" && diasParaVencer(cuota.fechaLimite) > DIAS_ANTES_PARA_RECORDAR) continue; // aun falta mucho
+    if (estado === "pendiente" && diasParaVencer(cuota.fechaLimite) > diasRecordatorio) continue; // aun falta mucho
 
     const datos: DatosNotificacion =
       estado === "vencida"

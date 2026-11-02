@@ -9,6 +9,7 @@ export interface Usuario {
   documento: string;
   estado: "activo" | "inactivo";
   rol: Rol;
+  foto?: string; // imagen de perfil (data URL); opcional
 }
 
 // "let" en vez de "const": este arreglo SI cambia con el tiempo,

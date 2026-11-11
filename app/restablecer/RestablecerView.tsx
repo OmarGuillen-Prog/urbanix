@@ -1,4 +1,3 @@
-// app/restablecer/RestablecerView.tsx
 "use client";
 
 import { useSearchParams } from "next/navigation";

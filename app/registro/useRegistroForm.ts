@@ -1,4 +1,3 @@
-// app/registro/useRegistroForm.ts
 "use client";
 
 import { useState } from "react";

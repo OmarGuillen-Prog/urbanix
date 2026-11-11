@@ -1,4 +1,3 @@
-// lib/reportesStore.ts
 // Calculos de las estadisticas. NO guarda nada: lee los demas stores y resume.
 import { obtenerTodasLasCuotas } from "./cuotasStore";
 import { obtenerNomina } from "./nominaStore";

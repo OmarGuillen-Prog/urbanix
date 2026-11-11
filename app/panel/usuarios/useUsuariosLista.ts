@@ -1,10 +1,10 @@
-// app/panel/usuarios/useUsuariosLista.ts
 "use client";
 
 import { useState, useMemo } from "react";
 import { obtenerUsuarios, eliminarUsuario, type Usuario } from "@/lib/usuariosStore";
 import { obtenerPropiedades } from "@/lib/propiedadesStore";
 import type { Rol } from "@/context/AuthContext";
+
 
 export function useUsuariosLista() {
   const [busqueda, setBusqueda] = useState("");

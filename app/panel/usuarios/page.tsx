@@ -1,4 +1,3 @@
-// app/panel/usuarios/page.tsx
 "use client";
 
 import Link from "next/link";
@@ -36,13 +35,6 @@ export default function UsuariosPage() {
             {usuariosFiltrados.length} usuario(s) encontrado(s)
           </p>
         </div>
-
-        <Link
-          href="/panel/usuarios/nuevo"
-          className="rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-brand-dark"
-        >
-          + Nuevo usuario
-        </Link>
       </div>
 
       <ResumenTarjetas

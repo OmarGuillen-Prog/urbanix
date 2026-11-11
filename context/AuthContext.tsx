@@ -1,4 +1,3 @@
-// context/AuthContext.tsx
 "use client";
 
 import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";

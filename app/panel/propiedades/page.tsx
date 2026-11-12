@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { useListaPropiedades } from "./useListaPropiedades";
-import { usePropiedadesResidente } from "./usePropiedadesResidente";
+import { VistaResidente } from "./VistaResidente";
 import { ResumenTarjetas } from "@/components/ResumenTarjetas";
 import type { Propiedad } from "@/lib/propiedadesStore";
 
@@ -37,51 +37,6 @@ export default function PropiedadesPage() {
     return <VistaResidente />;
   }
   return <VistaAdministrador />;
-}
-
-function VistaResidente() {
-  const { misPropiedades } = usePropiedadesResidente();
-
-  return (
-    <div>
-      <h1 className="font-display text-3xl font-semibold text-ink">Mi propiedad</h1>
-      <p className="mt-1 text-ink/60">Información de las propiedades asociadas a tu cuenta.</p>
-
-      {misPropiedades.length === 0 ? (
-        <p className="mt-6 text-ink/40">No tienes propiedades asociadas todavía.</p>
-      ) : (
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {misPropiedades.map((propiedad) => (
-            <div key={propiedad.id} className="rounded-xl border border-line bg-white p-6">
-              <div className="flex items-center justify-between">
-                <p className="font-display text-lg font-semibold text-ink">
-                  Torre {propiedad.torre} - {propiedad.numero}
-                </p>
-                <span className="rounded-full bg-brand/10 px-2.5 py-0.5 text-xs font-medium text-brand">
-                  {propiedad.miRelacion}
-                </span>
-              </div>
-
-              <dl className="mt-4 flex flex-col gap-2 text-sm">
-                <div className="flex justify-between">
-                  <dt className="text-ink/60">Tipo</dt>
-                  <dd className="text-ink">{ETIQUETAS_TIPO[propiedad.tipo]}</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-ink/60">Área</dt>
-                  <dd className="text-ink">{propiedad.area} m²</dd>
-                </div>
-                <div className="flex justify-between">
-                  <dt className="text-ink/60">Estado</dt>
-                  <dd className="text-ink">{ETIQUETAS_ESTADO[propiedad.estadoOcupacion]}</dd>
-                </div>
-              </dl>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
 }
 
 function VistaAdministrador() {

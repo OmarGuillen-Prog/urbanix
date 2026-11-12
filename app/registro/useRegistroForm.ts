@@ -1,19 +1,14 @@
 "use client";
 
 import { useState } from "react";
-
-const correosYaRegistrados = ["omar@urbanix.com", "juan@urbanix.com"];
-
-function verificarCorreoExistente(correo: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const existe = correosYaRegistrados.includes(correo.toLowerCase().trim());
-      resolve(existe);
-    }, 500);
-  });
-}
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
+import { registrarCuenta } from "@/lib/credencialesStore";
 
 export function useRegistroForm() {
+  const router = useRouter();
+  const { iniciarSesion } = useAuth();
+
   const [nombres, setNombres] = useState("");
   const [apellidos, setApellidos] = useState("");
   const [correo, setCorreo] = useState("");
@@ -37,8 +32,6 @@ export function useRegistroForm() {
     if (contrasena.length < 8) {
       nuevosErrores.contrasena = "La contraseña debe tener mínimo 8 caracteres";
     }
-    // Nueva validacion: mismo patron que ya usaste en Restablecer
-    // contraseña - comparar los dos campos de contraseña entre si.
     if (confirmarContrasena !== contrasena) {
       nuevosErrores.confirmarContrasena = "Las contraseñas no coinciden";
     }
@@ -49,24 +42,22 @@ export function useRegistroForm() {
       return;
     }
 
+    // Las validaciones locales primero; solo si pasan "consultamos al servidor" (simulado)
     setEnviando(true);
-    const correoYaExiste = await verificarCorreoExistente(correo);
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const resultado = registrarCuenta({ nombres, apellidos, correo, telefono, numeroUnidad, contrasena });
     setEnviando(false);
 
-    if (correoYaExiste) {
-      setErrores({ correo: "Este correo ya está registrado" });
+    if (!resultado.exito) {
+      // HU-01, criterio 3: no se permite el registro duplicado
+      setErrores({ correo: resultado.mensaje });
       return;
     }
 
+    // Cuenta creada (HU-01, criterio 1): la persona entra directo a su panel de residente
     setErrores({});
-    console.log("Formulario válido, listo para enviar:", {
-      nombres,
-      apellidos,
-      correo,
-      telefono,
-      numeroUnidad,
-      contrasena,
-    });
+    iniciarSesion(resultado.sesion);
+    router.push("/panel");
   }
 
   return {

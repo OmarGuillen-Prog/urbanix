@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { sesionSigueSiendoValida } from "@/lib/credencialesStore";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { VigilanteInactividad } from "./VigilanteInactividad";
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
-  const { usuario, cargando } = useAuth();
+  const { usuario, cargando, cerrarSesion } = useAuth();
   const router = useRouter();
 
   // En pantallas pequenas el menu lateral se despliega encima del contenido; este estado dice si esta abierto.
@@ -16,10 +17,20 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const [menuAbierto, setMenuAbierto] = useState(false);
 
   useEffect(() => {
-    if (!cargando && !usuario) {
+    if (cargando) return;
+
+    if (!usuario) {
+      router.push("/login");
+      return;
+    }
+
+    // La sesion vive en el navegador, pero la "verdad" es la lista de usuarios. Si la persona ya no existe
+    // (la eliminaron, o la simulacion se reinicio con F5) o fue desactivada, se cierra su sesion.
+    if (!sesionSigueSiendoValida(usuario.correo)) {
+      cerrarSesion();
       router.push("/login");
     }
-  }, [cargando, usuario, router]);
+  }, [cargando, usuario, cerrarSesion, router]);
 
   if (cargando || !usuario) {
     return (

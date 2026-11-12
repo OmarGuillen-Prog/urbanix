@@ -1,63 +1,117 @@
 import type { UsuarioSesion } from "@/context/AuthContext";
+import { obtenerUsuarios, obtenerUsuarioPorCorreo, crearUsuario, existeCorreoUsuario } from "./usuariosStore";
+import { notificarARol } from "./notificacionesStore";
 
-interface Credencial extends UsuarioSesion {
-  contrasena: string;
-}
+// Aqui solo viven las CONTRASEÑAS (clave: id del usuario). Quien es cada persona (nombre, rol, estado)
+// vive en usuariosStore: una sola fuente de verdad. Con una base de datos real, la contraseña seria una
+// columna (cifrada) de la tabla Usuario, y nunca se enviaria al navegador.
+const CONTRASENA_DE_EJEMPLO = "12345678";
 
-// Este arreglo reemplaza al que antes vivia dentro de
-// useLoginForm.ts - ahora es la UNICA fuente de verdad para
-// autenticacion, usada tanto por el login como por el cambio de
-// contraseña.
-let credenciales: Credencial[] = [
-  { correo: "omar@urbanix.com", contrasena: "12345678", nombres: "Omar", apellidos: "Guillén", rol: "administrador" },
-  { correo: "juan@urbanix.com", contrasena: "12345678", nombres: "Juan Manuel", apellidos: "Ciro", rol: "residente" },
-  { correo: "maria@urbanix.com", contrasena: "12345678", nombres: "María", apellidos: "López", rol: "residente" },
-  { correo: "laura@urbanix.com", contrasena: "12345678", nombres: "Laura", apellidos: "Gómez", rol: "residente" },
-  { correo: "andres@urbanix.com", contrasena: "12345678", nombres: "Andrés", apellidos: "Vélez", rol: "portero" },
-];
+let contrasenas: Record<string, string> = Object.fromEntries(
+  obtenerUsuarios().map((usuario) => [usuario.id, CONTRASENA_DE_EJEMPLO])
+);
 
-export function verificarCredenciales(correo: string, contrasena: string): Promise<UsuarioSesion | null> {
+// ---------- Iniciar sesion ----------
+export type ResultadoLogin =
+  | { ok: true; sesion: UsuarioSesion }
+  | { ok: false; motivo: "credenciales" | "inactivo" };
+
+export function verificarCredenciales(correo: string, contrasena: string): Promise<ResultadoLogin> {
   return new Promise((resolve) => {
     setTimeout(() => {
-      const encontrado = credenciales.find(
-        (c) => c.correo === correo.toLowerCase().trim() && c.contrasena === contrasena
-      );
-      if (!encontrado) {
-        resolve(null);
+      const usuario = obtenerUsuarioPorCorreo(correo.toLowerCase().trim());
+
+      // Mismo resultado si el correo no existe o la contraseña no coincide: asi nadie puede
+      // descubrir probando que correos estan registrados.
+      if (!usuario || contrasenas[usuario.id] !== contrasena) {
+        resolve({ ok: false, motivo: "credenciales" });
         return;
       }
-      // Armamos la sesion con SOLO los datos que necesita: asi la contraseña nunca viaja mas alla de aqui,
-      // ni siquiera si manana agregas otro campo a Credencial.
-      const sesion: UsuarioSesion = {
-        correo: encontrado.correo,
-        nombres: encontrado.nombres,
-        apellidos: encontrado.apellidos,
-        rol: encontrado.rol,
-      };
-      resolve(sesion);
+
+      // Contraseña correcta, pero la cuenta fue desactivada por el administrador
+      if (usuario.estado !== "activo") {
+        resolve({ ok: false, motivo: "inactivo" });
+        return;
+      }
+
+      // La sesion lleva SOLO estos datos (nunca la contraseña, ni aunque manana se agreguen mas campos al usuario)
+      resolve({
+        ok: true,
+        sesion: { correo: usuario.correo, nombres: usuario.nombres, apellidos: usuario.apellidos, rol: usuario.rol },
+      });
     }, 500);
   });
 }
 
+// ¿La persona de esta sesion sigue existiendo y activa? La sesion vive en el navegador, pero la
+// "verdad" es la lista de usuarios (un servidor real lo comprueba en cada peticion).
+export function sesionSigueSiendoValida(correo: string): boolean {
+  const usuario = obtenerUsuarioPorCorreo(correo);
+  return usuario !== undefined && usuario.estado === "activo";
+}
+
+// ---------- Registro (HU-01) ----------
+export interface DatosRegistro {
+  nombres: string;
+  apellidos: string;
+  correo: string;
+  telefono: string;
+  numeroUnidad: string;
+  contrasena: string;
+}
+
+export type ResultadoRegistro = { exito: true; sesion: UsuarioSesion } | { exito: false; mensaje: string };
+
+export function registrarCuenta(datos: DatosRegistro): ResultadoRegistro {
+  const correo = datos.correo.toLowerCase().trim();
+
+  if (existeCorreoUsuario(correo)) {
+    return { exito: false, mensaje: "Este correo ya está registrado" };
+  }
+
+  // Todo registro nace como RESIDENTE y activo. La persona NO elige su rol: asignar otro es tarea
+  // del administrador (HU-04). Dar siempre el minimo de permisos al empezar es una regla basica de seguridad.
+  const nuevo = crearUsuario({
+    nombres: datos.nombres.trim(),
+    apellidos: datos.apellidos.trim(),
+    correo,
+    telefono: datos.telefono.trim(),
+    documento: "",
+    estado: "activo",
+    rol: "residente",
+    unidadSolicitada: datos.numeroUnidad.trim(),
+  });
+  contrasenas = { ...contrasenas, [nuevo.id]: datos.contrasena };
+
+  // El administrador se entera, y de que unidad dice ser
+  notificarARol("administrador", {
+    tipo: "info",
+    titulo: "Nuevo usuario registrado",
+    mensaje: `${nuevo.nombres} ${nuevo.apellidos} pidió la unidad ${nuevo.unidadSolicitada}`,
+    enlace: "/panel/usuarios",
+  });
+
+  return {
+    exito: true,
+    sesion: { correo: nuevo.correo, nombres: nuevo.nombres, apellidos: nuevo.apellidos, rol: nuevo.rol },
+  };
+}
+
+// ---------- Cambiar contraseña (HU-42) ----------
 export function cambiarContrasena(
   correo: string,
   actual: string,
   nueva: string
 ): { exito: boolean; mensaje?: string } {
-  const credencial = credenciales.find((c) => c.correo === correo);
+  const usuario = obtenerUsuarioPorCorreo(correo);
 
-  if (!credencial) {
+  if (!usuario) {
     return { exito: false, mensaje: "Usuario no encontrado" };
   }
-  if (credencial.contrasena !== actual) {
+  if (contrasenas[usuario.id] !== actual) {
     return { exito: false, mensaje: "La contraseña actual es incorrecta" };
   }
 
-  credenciales = credenciales.map((c) => (c.correo === correo ? { ...c, contrasena: nueva } : c));
+  contrasenas = { ...contrasenas, [usuario.id]: nueva };
   return { exito: true };
-}
-
-// Mantiene al dia los nombres con los que se inicia sesion cuando alguien edita su perfil
-export function actualizarNombresCredencial(correo: string, nombres: string, apellidos: string): void {
-  credenciales = credenciales.map((c) => (c.correo === correo ? { ...c, nombres, apellidos } : c));
 }

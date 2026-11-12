@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { obtenerUsuarioPorCorreo, actualizarUsuario } from "@/lib/usuariosStore";
-import { actualizarNombresCredencial } from "@/lib/credencialesStore";
 import { validarImagen, leerComoDataUrl } from "@/lib/imagenes";
 
 interface ErroresPerfil {
@@ -83,16 +82,14 @@ export function usePerfil() {
     const nombresLimpios = nombres.trim();
     const apellidosLimpios = apellidos.trim();
 
-    // 1) La ficha del usuario (lo que ve el administrador en Usuarios)
+    // 1) La ficha del usuario: es lo que ve el administrador en Usuarios y TAMBIEN de donde lee el login
     actualizarUsuario(registro.id, {
       nombres: nombresLimpios,
       apellidos: apellidosLimpios,
       telefono: telefono.trim(),
       foto: foto ?? undefined,
     });
-    // 2) Los datos con los que se inicia sesion la proxima vez
-    actualizarNombresCredencial(usuario.correo, nombresLimpios, apellidosLimpios);
-    // 3) La sesion actual: el nombre del Topbar se actualiza al instante
+    // 2) La sesion actual: el nombre del Topbar se actualiza al instante
     iniciarSesion({ ...usuario, nombres: nombresLimpios, apellidos: apellidosLimpios });
 
     setErrores({});

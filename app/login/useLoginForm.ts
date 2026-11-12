@@ -31,16 +31,21 @@ export function useLoginForm() {
     }
 
     setEnviando(true);
-    const sesion = await verificarCredenciales(correo, contrasena);
+    const resultado = await verificarCredenciales(correo, contrasena);
     setEnviando(false);
 
-    if (!sesion) {
-      setErrores({ general: "Correo o contraseña incorrectos" });
+    if (!resultado.ok) {
+      setErrores({
+        general:
+          resultado.motivo === "inactivo"
+            ? "Tu cuenta está inactiva. Comunícate con la administración."
+            : "Correo o contraseña incorrectos",
+      });
       return;
     }
 
     setErrores({});
-    iniciarSesion(sesion);
+    iniciarSesion(resultado.sesion);
     router.push("/panel");
   }
 

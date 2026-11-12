@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
 
 // El rol determina que puede ver y hacer cada usuario (RNF-03).
 // Definirlo como un tipo (no un string cualquiera) evita errores de
@@ -78,15 +78,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [sesionGuardada]);
 
-  function iniciarSesion(nuevoUsuario: UsuarioSesion) {
+  // useCallback: estas dos funciones mantienen la MISMA identidad entre dibujos, asi pueden
+  // usarse en la lista de dependencias de un useEffect sin que este se repita sin necesidad.
+  const iniciarSesion = useCallback((nuevoUsuario: UsuarioSesion) => {
     localStorage.setItem(CLAVE_STORAGE, JSON.stringify(nuevoUsuario));
     avisarCambio();
-  }
+  }, []);
 
-  function cerrarSesion() {
+  const cerrarSesion = useCallback(() => {
     localStorage.removeItem(CLAVE_STORAGE);
     avisarCambio();
-  }
+  }, []);
 
   return (
     <AuthContext.Provider value={{ usuario, cargando: !enNavegador, iniciarSesion, cerrarSesion }}>

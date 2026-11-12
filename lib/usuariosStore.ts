@@ -10,6 +10,7 @@ export interface Usuario {
   estado: "activo" | "inactivo";
   rol: Rol;
   foto?: string; // imagen de perfil (data URL); opcional
+  unidadSolicitada?: string; // la unidad que la persona indicó al registrarse (el administrador la asigna en Propiedades)
 }
 
 // "let" en vez de "const": este arreglo SI cambia con el tiempo,
@@ -55,7 +56,9 @@ export function existeCorreoUsuario(correo: string): boolean {
   return usuarios.some((u) => u.correo.toLowerCase() === correo.toLowerCase());
 }
 
-export function crearUsuario(datos: Omit<Usuario, "id">): void {
+export function crearUsuario(datos: Omit<Usuario, "id">): Usuario {
   const nuevoId = (Math.max(0, ...usuarios.map((u) => Number(u.id))) + 1).toString();
-  usuarios = [...usuarios, { id: nuevoId, ...datos }];
+  const nuevo: Usuario = { id: nuevoId, ...datos };
+  usuarios = [...usuarios, nuevo];
+  return nuevo;
 }

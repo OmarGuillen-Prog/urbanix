@@ -165,7 +165,7 @@ function VistaAdministrador() {
                 key={propiedad.id}
                 className="overflow-hidden rounded-xl border border-line bg-white transition-shadow hover:shadow-md"
               >
-                <div className="relative flex h-28 items-center justify-center bg-gradient-to-br from-brand to-brand-dark">
+                <div className="relative flex h-28 items-center justify-center bg-linear-to-br from-brand to-brand-dark">
                   <span className="text-4xl opacity-40">🏢</span>
                   <span
                     className={`absolute right-3 top-3 rounded-full px-2.5 py-0.5 text-xs font-medium ${ESTILOS_BADGE[propiedad.estadoOcupacion]}`}

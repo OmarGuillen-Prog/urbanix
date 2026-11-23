@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { registrarCuenta } from "@/lib/credencialesStore";
+import { ApiError, erroresDeFormulario } from "@/lib/api";
+import { iniciarSesionApi, registrarCuentaApi } from "@/lib/authApi";
 
 export function useRegistroForm() {
   const router = useRouter();
@@ -13,9 +14,10 @@ export function useRegistroForm() {
   const [apellidos, setApellidos] = useState("");
   const [correo, setCorreo] = useState("");
   const [telefono, setTelefono] = useState("");
-  const [numeroUnidad, setNumeroUnidad] = useState("");
+  const [documento, setDocumento] = useState("");
   const [contrasena, setContrasena] = useState("");
   const [confirmarContrasena, setConfirmarContrasena] = useState("");
+  const [aceptoPolitica, setAceptoPolitica] = useState(false);
   const [errores, setErrores] = useState<{ [campo: string]: string }>({});
   const [enviando, setEnviando] = useState(false);
 
@@ -28,36 +30,50 @@ export function useRegistroForm() {
     if (apellidos.trim() === "") nuevosErrores.apellidos = "El apellido es obligatorio";
     if (correo.trim() === "") nuevosErrores.correo = "El correo es obligatorio";
     if (telefono.trim() === "") nuevosErrores.telefono = "El teléfono es obligatorio";
-    if (numeroUnidad.trim() === "") nuevosErrores.numeroUnidad = "El número de unidad es obligatorio";
+    if (documento.trim().length < 5 || documento.trim().length > 20) {
+      nuevosErrores.documento = "El documento debe tener entre 5 y 20 caracteres";
+    }
     if (contrasena.length < 8) {
       nuevosErrores.contrasena = "La contraseña debe tener mínimo 8 caracteres";
     }
     if (confirmarContrasena !== contrasena) {
       nuevosErrores.confirmarContrasena = "Las contraseñas no coinciden";
     }
+    if (!aceptoPolitica) {
+      nuevosErrores.aceptoPolitica = "Debes aceptar la política de tratamiento de datos";
+    }
 
     setErrores(nuevosErrores);
+    if (Object.keys(nuevosErrores).length > 0) return;
 
-    if (Object.keys(nuevosErrores).length > 0) {
-      return;
-    }
-
-    // Las validaciones locales primero; solo si pasan "consultamos al servidor" (simulado)
     setEnviando(true);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    const resultado = registrarCuenta({ nombres, apellidos, correo, telefono, numeroUnidad, contrasena });
-    setEnviando(false);
+    try {
+      // 1) Crear la cuenta (HU-01, criterio 1)
+      await registrarCuentaApi({ nombres, apellidos, correo, telefono, documento, contrasena, aceptoPolitica });
 
-    if (!resultado.exito) {
-      // HU-01, criterio 3: no se permite el registro duplicado
-      setErrores({ correo: resultado.mensaje });
-      return;
+      // 2) Iniciar sesión con esos mismos datos para que entre directo al panel
+      const { token, sesion } = await iniciarSesionApi(correo, contrasena);
+      setErrores({});
+      iniciarSesion(sesion, token);
+      router.push("/panel");
+    } catch (error) {
+      if (!(error instanceof ApiError)) {
+        setErrores({ general: "Ocurrió un error inesperado" });
+      } else if (error.errores.length > 0) {
+        // 422: el backend marca el campo con problema
+        setErrores(
+          erroresDeFormulario(error, { password: "contrasena", acepto_politica_datos: "aceptoPolitica" }),
+        );
+      } else if (error.status === 409) {
+        // HU-01, criterio 3: duplicado. El mensaje dice "El correo..." o "El documento..."
+        const campo = error.message.toLowerCase().includes("documento") ? "documento" : "correo";
+        setErrores({ [campo]: error.message });
+      } else {
+        setErrores({ general: error.message });
+      }
+    } finally {
+      setEnviando(false);
     }
-
-    // Cuenta creada (HU-01, criterio 1): la persona entra directo a su panel de residente
-    setErrores({});
-    iniciarSesion(resultado.sesion);
-    router.push("/panel");
   }
 
   return {
@@ -65,9 +81,10 @@ export function useRegistroForm() {
     apellidos, setApellidos,
     correo, setCorreo,
     telefono, setTelefono,
-    numeroUnidad, setNumeroUnidad,
+    documento, setDocumento,
     contrasena, setContrasena,
     confirmarContrasena, setConfirmarContrasena,
+    aceptoPolitica, setAceptoPolitica,
     errores,
     enviando,
     handleSubmit,

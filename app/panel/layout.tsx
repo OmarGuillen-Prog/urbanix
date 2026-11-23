@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { sesionSigueSiendoValida } from "@/lib/credencialesStore";
+import { sesionApiSigueValida } from "@/lib/authApi";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { VigilanteInactividad } from "./VigilanteInactividad";
@@ -17,19 +17,27 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   const [menuAbierto, setMenuAbierto] = useState(false);
 
   useEffect(() => {
-    if (cargando) return;
+  if (cargando) return;
 
-    if (!usuario) {
-      router.push("/login");
-      return;
-    }
+  if (!usuario) {
+    router.push("/login");
+    return;
+  }
 
-    // La sesion vive en el navegador, pero la "verdad" es la lista de usuarios. Si la persona ya no existe
-    // (la eliminaron, o la simulacion se reinicio con F5) o fue desactivada, se cierra su sesion.
-    if (!sesionSigueSiendoValida(usuario.correo)) {
-      cerrarSesion();
-      router.push("/login");
-    }
+  // Preguntamos al SERVIDOR REAL si esta sesión sigue siendo válida (ya no a la lista simulada).
+  // "cancelado" evita actuar con una respuesta vieja si el componente se desmonta mientras esperamos.
+  let cancelado = false;
+
+  sesionApiSigueValida().then((valida) => {
+    if (cancelado || valida) return; // sesión buena: no hacemos nada
+    cerrarSesion();                  // el servidor dijo 401: borramos token y sesión
+    router.push("/login");
+  });
+
+  // Función de limpieza: React la ejecuta al desmontar o antes de repetir el efecto
+  return () => {
+    cancelado = true;
+  };
   }, [cargando, usuario, cerrarSesion, router]);
 
   if (cargando || !usuario) {

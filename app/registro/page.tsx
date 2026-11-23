@@ -17,14 +17,15 @@ const PATRON_VENTANAS = [
 ];
 
 export default function RegistroPage() {
-  const {
+    const {
     nombres, setNombres,
     apellidos, setApellidos,
     correo, setCorreo,
     telefono, setTelefono,
-    numeroUnidad, setNumeroUnidad,
+    documento, setDocumento,
     contrasena, setContrasena,
     confirmarContrasena, setConfirmarContrasena,
+    aceptoPolitica, setAceptoPolitica,
     errores,
     enviando,
     handleSubmit,
@@ -44,9 +45,24 @@ export default function RegistroPage() {
         <FormInput id="apellidos" label="Apellidos" placeholder="Ej: Ciro Rivera" value={apellidos} onChange={setApellidos} error={errores.apellidos} />
         <FormInput id="correo" label="Correo electrónico" type="email" placeholder="tucorreo@ejemplo.com" value={correo} onChange={setCorreo} error={errores.correo} />
         <FormInput id="telefono" label="Teléfono" type="tel" placeholder="Ej: 3001234567" value={telefono} onChange={setTelefono} error={errores.telefono} />
-        <FormInput id="numeroUnidad" label="Número de unidad / apartamento" placeholder="Ej: Torre A - 101" value={numeroUnidad} onChange={setNumeroUnidad} error={errores.numeroUnidad} />
+                <FormInput id="documento" label="Documento de identidad" placeholder="Ej: 1000000001" value={documento} onChange={setDocumento} error={errores.documento} />
         <FormInput id="contrasena" label="Contraseña" type="password" placeholder="Mínimo 8 caracteres" value={contrasena} onChange={setContrasena} error={errores.contrasena} />
         <FormInput id="confirmarContrasena" label="Confirmar contraseña" type="password" placeholder="Repite la contraseña" value={confirmarContrasena} onChange={setConfirmarContrasena} error={errores.confirmarContrasena} />
+
+        <div>
+          <label className="flex items-start gap-2 text-sm text-ink/70">
+            <input
+              type="checkbox"
+              checked={aceptoPolitica}
+              onChange={(e) => setAceptoPolitica(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-ink/30"
+            />
+            <span>Acepto la política de tratamiento de datos personales (Ley 1581 de 2012).</span>
+          </label>
+          {errores.aceptoPolitica && <p className="mt-1 text-sm text-error">{errores.aceptoPolitica}</p>}
+        </div>
+
+        {errores.general && <p className="text-sm text-error">{errores.general}</p>}
 
         <button
           type="submit"

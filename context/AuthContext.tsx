@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useMemo, useSyncExternalStore, type ReactNode } from "react";
+import { CLAVE_TOKEN } from "@/lib/api";
 
 // El rol determina que puede ver y hacer cada usuario (RNF-03).
 // Definirlo como un tipo (no un string cualquiera) evita errores de
@@ -18,7 +19,7 @@ export interface UsuarioSesion {
 interface AuthContextValue {
   usuario: UsuarioSesion | null;
   cargando: boolean; // true mientras revisamos si habia sesion guardada
-  iniciarSesion: (usuario: UsuarioSesion) => void;
+  iniciarSesion: (usuario: UsuarioSesion, token?: string) => void;
   cerrarSesion: () => void;
 }
 
@@ -80,15 +81,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // useCallback: estas dos funciones mantienen la MISMA identidad entre dibujos, asi pueden
   // usarse en la lista de dependencias de un useEffect sin que este se repita sin necesidad.
-  const iniciarSesion = useCallback((nuevoUsuario: UsuarioSesion) => {
-    localStorage.setItem(CLAVE_STORAGE, JSON.stringify(nuevoUsuario));
-    avisarCambio();
-  }, []);
+  const iniciarSesion = useCallback((nuevoUsuario: UsuarioSesion, token?: string) => {
+  // Con token (login/registro): guardamos la "pulsera" nueva.
+  // Sin token (ej. editar el perfil): no tocamos la que ya hay.
+  if (token) localStorage.setItem(CLAVE_TOKEN, token);
+  localStorage.setItem(CLAVE_STORAGE, JSON.stringify(nuevoUsuario)); // datos para pintar la interfaz
+  avisarCambio();
+}, []);
 
-  const cerrarSesion = useCallback(() => {
-    localStorage.removeItem(CLAVE_STORAGE);
-    avisarCambio();
-  }, []);
+const cerrarSesion = useCallback(() => {
+  localStorage.removeItem(CLAVE_TOKEN);
+  localStorage.removeItem(CLAVE_STORAGE);
+  avisarCambio();
+}, []);
 
   return (
     <AuthContext.Provider value={{ usuario, cargando: !enNavegador, iniciarSesion, cerrarSesion }}>

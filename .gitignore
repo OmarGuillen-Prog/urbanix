@@ -33,6 +33,9 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# Excepción: el archivo de ejemplo SÍ se sube (no lleva secretos)
+!.env.example
+
 # vercel
 .vercel
 

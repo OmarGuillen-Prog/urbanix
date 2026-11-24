@@ -1,5 +1,7 @@
 "use client";
 
+import { MODO_DEMO } from "@/lib/modoDemo";
+import { verificarCredenciales } from "@/lib/credencialesStore";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
@@ -39,11 +41,24 @@ export function useLoginForm() {
       iniciarSesion(sesion, token);
       router.push("/panel");
     } catch (error) {
+      // 🎭 MODO DEMO: si la API no te conoce (401) o no hay servidor (0), probamos la lista simulada.
+      // El 403 (cuenta inactiva) NO entra aquí: esa respuesta es válida y se muestra tal cual.
+      if (MODO_DEMO && error instanceof ApiError && (error.status === 401 || error.status === 0)) {
+        const simulado = await verificarCredenciales(correo, contrasena);
+        if (simulado.ok) {
+          setErrores({});
+          iniciarSesion(simulado.sesion, null); // null = sesión sin token
+          router.push("/panel");
+          return; // el "finally" de abajo igual apaga el "Verificando..."
+        }
+      }
+
+      // (lo de siempre)
       if (error instanceof ApiError && error.errores.length > 0) {
         // 422: el backend señala qué campo está mal (ej. formato de correo)
         setErrores(erroresDeFormulario(error, { password: "contrasena" }));
       } else {
-        // 401 (credenciales), 403 (cuenta inactiva) o sin conexión: el backend ya manda el texto en español
+        // 401, 403 o sin conexión: el backend ya manda el texto en español
         setErrores({ general: error instanceof ApiError ? error.message : "Ocurrió un error inesperado" });
       }
     } finally {

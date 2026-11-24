@@ -1,9 +1,10 @@
 "use client";
 
+// 1) el import (antes: sesionApiSigueValida de "@/lib/authApi")
+import { sesionSigueValida } from "@/lib/modoDemo";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
-import { sesionApiSigueValida } from "@/lib/authApi";
 import { Sidebar } from "./Sidebar";
 import { Topbar } from "./Topbar";
 import { VigilanteInactividad } from "./VigilanteInactividad";
@@ -28,7 +29,8 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   // "cancelado" evita actuar con una respuesta vieja si el componente se desmonta mientras esperamos.
   let cancelado = false;
 
-  sesionApiSigueValida().then((valida) => {
+  // 2) la llamada dentro del efecto (antes: sesionApiSigueValida())
+  sesionSigueValida(usuario.correo).then((valida) => {
     if (cancelado || valida) return; // sesión buena: no hacemos nada
     cerrarSesion();                  // el servidor dijo 401: borramos token y sesión
     router.push("/login");

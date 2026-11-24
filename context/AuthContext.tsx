@@ -19,7 +19,7 @@ export interface UsuarioSesion {
 interface AuthContextValue {
   usuario: UsuarioSesion | null;
   cargando: boolean; // true mientras revisamos si habia sesion guardada
-  iniciarSesion: (usuario: UsuarioSesion, token?: string) => void;
+  iniciarSesion: (usuario: UsuarioSesion, token?: string | null) => void;
   cerrarSesion: () => void;
 }
 
@@ -81,10 +81,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // useCallback: estas dos funciones mantienen la MISMA identidad entre dibujos, asi pueden
   // usarse en la lista de dependencias de un useEffect sin que este se repita sin necesidad.
-  const iniciarSesion = useCallback((nuevoUsuario: UsuarioSesion, token?: string) => {
-  // Con token (login/registro): guardamos la "pulsera" nueva.
-  // Sin token (ej. editar el perfil): no tocamos la que ya hay.
+  const iniciarSesion = useCallback((nuevoUsuario: UsuarioSesion, token?: string | null) => {
   if (token) localStorage.setItem(CLAVE_TOKEN, token);
+  else if (token === null) localStorage.removeItem(CLAVE_TOKEN); // sesión de demo: sin token
+  // token === undefined (editar perfil): no se toca
   localStorage.setItem(CLAVE_STORAGE, JSON.stringify(nuevoUsuario)); // datos para pintar la interfaz
   avisarCambio();
 }, []);
